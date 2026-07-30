@@ -55,7 +55,7 @@ def criar_arquivo_word(texto):
     return conteudo_binario
 
 def exportar_historico_completo(mensagens):
-    if not mensagens:
+    if not messages:
         return "--- O HISTÓRICO DE ATENDIMENTO ESTÁ VAZIO ---"
     historico_texto = "--- HISTÓRICO DE ATENDIMENTO - SETUBAL JURIS AI ---\n\n"
     for msg in mensagens:
@@ -106,7 +106,9 @@ groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
 else:
-    llm = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
+    # INICIALIZAÇÃO DE MODELOS DUPLOS PARA EVITAR INSTABILIDADES DE FORMATO
+    llm_texto = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, groq_api_key=groq_api_key)
+    llm_visao = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
     banco_leis = inicializar_banco_de_dados()
 
     st.sidebar.markdown("---")
@@ -165,7 +167,7 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # --- FILTRO CORRIGIDO: Trocado 'palabra' por 'palavra' em português ---
+        # 1. FILTRO DE ESCOPO JURÍDICO INTERNO
         palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
         prompt_minusculo = prompt.lower()
         
@@ -179,6 +181,7 @@ else:
             st.session_state.messages.append({"role": "assistant", "content": resposta_recusa})
         
         else:
+            # 2. BUSCA NO BANCO VETORIAL DE LEIS
             contexto_leis = ""
             if banco_leis is not None:
                 resultados_busca = banco_leis.similarity_search(prompt, k=2)
@@ -188,32 +191,31 @@ else:
             if contexto_leis:
                 prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
 
-            if dados_imagem_base64:
-                conteudo_usuario = [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
-                    }
-                ]
-                historico_ia = [
-                    SystemMessage(content=prompt_completo_sistema),
-                    HumanMessage(content=conteudo_usuario)
-                ]
-            else:
-                historico_ia = [
-                    SystemMessage(content=prompt_completo_sistema),
-                    HumanMessage(content=prompt)
-                ]
-            
+            # 3. ESCOLHA INTELIGENTE DO MODELO DE IA DEPENDENDO DO INPUT (BLINDAGEM EXTRA CONTRA ERROS)
             with st.chat_message("assistant"):
-                with st.spinner("Setubal Juris AI processando análise..."):
+                with st.spinner("Setubal Juris AI processando..."):
                     try:
-                        resposta = llm.invoke(historico_ia)
+                        if dados_imagem_base64:
+                            # Se o usuário enviou uma FOTO, ativa o modelo de Visão com o formato estruturado
+                            conteudo_usuario = [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
+                                }
+                            ]
+                            historico_ia = [
+                                SystemMessage(content=prompt_completo_sistema),
+                                HumanMessage(content=conteudo_usuario)
+                            ]
+                            resposta = llm_visao.invoke(historico_ia)
+                        else:
+                            # Se for apenas TEXTO (como a pergunta do Artigo 1), usa o poderoso Llama 3.3 de texto puro com histórico limpo
+                            historico_ia = [SystemMessage(content=prompt_completo_sistema)]
+                            for msg in st.session_state.messages:
+                                historico_ia.append(HumanMessage(content=msg["content"]) if msg["role"] == "user" else SystemMessage(content=msg["content"]))
+                            resposta = llm_texto.invoke(historico_ia)
+                        
                         st.markdown(resposta.content)
                         st.session_state.messages.append({"role": "assistant", "content": resposta.content})
                         
-                        arquivo_docx = criar_arquivo_word(resposta.content)
-                        st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
-                    except Exception as e:
-                        st.error("Ocorreu uma instabilidade na API de visão do Groq. Por favor, limpe o chat e tente novamente.")
