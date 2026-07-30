@@ -79,7 +79,7 @@ if check_password():
     st.sidebar.header("🏛️ Painel Setubal Juris")
     st.sidebar.markdown("### 💾 Gestão da Sessão")
 
-    # NOVO BOTÃO INTEGRADO: Iniciar Novo Caso e Arquivar o Anterior na Lateral
+    # BOTÃO INTEGRADO: Iniciar Novo Caso e Arquivar o Anterior na Lateral
     if st.sidebar.button("➕ Iniciar Novo Caso (Arquivar Atual)"):
         if st.session_state.messages:
             num_caso = len(st.session_state.historico_casos) + 1
@@ -95,7 +95,7 @@ if check_password():
         st.toast("Todo o sistema foi limpo!")
         st.rerun()
 
-    # Exibe a lista de Casos Arquivados para consulta se houver algum salvo
+    # Exibe a lista de Casos Arquivados para consulta
     if st.session_state.historico_casos:
         st.sidebar.markdown("### 🗄️ Casos Arquivados nesta Sessão")
         for nome_caso, msgs_salvas in st.session_state.historico_casos.items():
@@ -180,24 +180,26 @@ if check_password():
             else:
                 with st.chat_message("assistant"):
                     with st.spinner("Setubal Juris AI processando..."):
-                        try:
-                            if dados_imagem_base64:
-                                conteudo_usuario = [
-                                    {"type": "text", "text": prompt},
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
-                                    }
-                                ]
-                                historico_ia = [
-                                    SystemMessage(content=PROMPT_SISTEMA),
-                                    HumanMessage(content=conteudo_usuario)
-                                ]
-                                resposta = llm_visao.invoke(historico_ia)
-                            else:
-                                historico_ia = [SystemMessage(content=PROMPT_SISTEMA)]
-                                for msg in st.session_state.messages:
-                                    if msg["role"] == "user":
-                                        historico_ia.append(HumanMessage(content=msg["content"]))
-                                    else:
-                                        historico_ia.append(SystemMessage(content=msg["content"]))
+                        if dados_imagem_base64:
+                            conteudo_usuario = [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
+                                }
+                            ]
+                            historico_ia = [
+                                SystemMessage(content=PROMPT_SISTEMA),
+                                HumanMessage(content=conteudo_usuario)
+                            ]
+                            resposta = llm_visao.invoke(historico_ia)
+                        else:
+                            historico_ia = [SystemMessage(content=PROMPT_SISTEMA)]
+                            for msg in st.session_state.messages:
+                                if msg["role"] == "user":
+                                    historico_ia.append(HumanMessage(content=msg["content"]))
+                                else:
+                                    historico_ia.append(SystemMessage(content=msg["content"]))
+                            resposta = llm_texto.invoke(historico_ia)
+                        
+                        st.markdown(resposta.content)
