@@ -16,9 +16,8 @@ from docx import Document
 from io import BytesIO
 import base64
 
+# Configuração da página e ocultação dos botões e barras de desenvolvedor do topo
 st.set_page_config(page_title="Setubal Juris AI", page_icon="⚖️", layout="wide")
-
-# Ocultar ferramentas de desenvolvedor e tarjas do Streamlit
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -106,7 +105,6 @@ groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
 else:
-    # Modelos duplos ativos para gerenciar texto e visão de forma isolada
     llm_texto = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, groq_api_key=groq_api_key)
     llm_visao = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
     banco_leis = inicializar_banco_de_dados()
@@ -124,14 +122,12 @@ else:
 
     if arquivo_enviado is not None:
         nome_extensao = arquivo_enviado.name.lower()
-        
         if nome_extensao.endswith(".pdf"):
             st.sidebar.success("Documento PDF carregado!")
             reader_contrato = PdfReader(arquivo_enviado)
             for page in reader_contrato.pages:
                 t = page.extract_text()
                 if t: texto_contrato_atual += t + "\n"
-        
         elif nome_extensao.endswith((".png", ".jpg", ".jpeg")):
             st.sidebar.success("Foto/Imagem jurídica carregada!")
             tipo_mime_imagem = f"image/{'png' if nome_extensao.endswith('.png') else 'jpeg'}"
@@ -153,7 +149,7 @@ else:
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
-    # Renderização do Chat na Interface
+    # Renderização das mensagens anteriores na tela
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -161,7 +157,7 @@ else:
                 arquivo_docx = criar_arquivo_word(message["content"])
                 st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
 
-    # Processamento da entrada do usuário
+    # Processamento de nova entrada no chat
     if prompt := st.chat_input("Ex: Avalie a cláusula de rescisão..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -219,3 +215,4 @@ else:
                         st.session_state.messages.append({"role": "assistant", "content": resposta.content})
                         
                         arquivo_docx = criar_arquivo_word(resposta.content)
+                        st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
