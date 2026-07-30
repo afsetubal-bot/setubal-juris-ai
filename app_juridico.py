@@ -16,7 +16,7 @@ from docx import Document
 from io import BytesIO
 import base64
 
-# Configuração da página e ocultação dos botões e barras de desenvolvedor do topo
+# Configuração visual do topo da página
 st.set_page_config(page_title="Setubal Juris AI", page_icon="⚖️", layout="wide")
 st.markdown("""
     <style>
@@ -33,7 +33,7 @@ st.subheader("Plataforma de Inteligência, Auditoria e Visão Jurídica")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# BARRA LATERAL: Configuração das ferramentas
+# BARRA LATERAL: Configurações e ferramentas
 st.sidebar.header("🏛️ Painel Setubal Juris")
 st.sidebar.markdown("### 💾 Gestão da Sessão")
 
@@ -71,7 +71,7 @@ st.sidebar.download_button(
     mime="text/plain"
 )
 
-# Caminhos configurados corretamente para a nuvem ler do GitHub
+# Configuração das pastas de leis permanentes
 PASTA_LEIS = os.path.join(os.path.dirname(__file__), "leis_fixas")
 PASTA_BANCO = os.path.join(os.path.dirname(__file__), "banco_vetorial")
 os.makedirs(PASTA_LEIS, exist_ok=True)
@@ -105,6 +105,7 @@ groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
 else:
+    # Modelos paralelos configurados de forma limpa
     llm_texto = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, groq_api_key=groq_api_key)
     llm_visao = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
     banco_leis = inicializar_banco_de_dados()
@@ -149,7 +150,7 @@ else:
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
-    # Renderização das mensagens anteriores na tela
+    # Renderização simples e direta do chat na tela
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -157,17 +158,15 @@ else:
                 arquivo_docx = criar_arquivo_word(message["content"])
                 st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
 
-    # Processamento de nova entrada no chat
+    # Processamento seguro de novas entradas no chat
     if prompt := st.chat_input("Ex: Avalie a cláusula de rescisão..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Filtro de escopo jurídico preventivo
+        # Filtro de escopo de assuntos jurídicos
         palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
-        prompt_minusculo = prompt.lower()
-        
-        if any(palavra in prompt_minusculo for palavra in palavras_bloqueadas):
+        if any(palavra in prompt.lower() for palavra in palavras_bloqueadas):
             resposta_recusa = (
                 "Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
                 "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal."
@@ -186,33 +185,34 @@ else:
             if contexto_leis:
                 prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
 
+            # Início do processamento da resposta da IA
             with st.chat_message("assistant"):
                 with st.spinner("Setubal Juris AI processando..."):
-                    try:
-                        if dados_imagem_base64:
-                            conteudo_usuario = [
-                                {"type": "text", "text": prompt},
-                                {
-                                    "type": "image_url",
-                                    "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
-                                }
-                            ]
-                            historico_ia = [
-                                SystemMessage(content=prompt_completo_sistema),
-                                HumanMessage(content=conteudo_usuario)
-                            ]
-                            resposta = llm_visao.invoke(historico_ia)
-                        else:
-                            historico_ia = [SystemMessage(content=prompt_completo_sistema)]
-                            for msg in st.session_state.messages:
-                                if msg["role"] == "user":
-                                    historico_ia.append(HumanMessage(content=msg["content"]))
-                                else:
-                                    historico_ia.append(SystemMessage(content=msg["content"]))
-                            resposta = llm_texto.invoke(historico_ia)
-                        
-                        st.markdown(resposta.content)
-                        st.session_state.messages.append({"role": "assistant", "content": resposta.content})
-                        
-                        arquivo_docx = criar_arquivo_word(resposta.content)
-                        st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
+                    if dados_imagem_base64:
+                        conteudo_usuario = [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
+                            }
+                        ]
+                        historico_ia = [
+                            SystemMessage(content=prompt_completo_sistema),
+                            HumanMessage(content=conteudo_usuario)
+                        ]
+                        resposta = llm_visao.invoke(historico_ia)
+                    else:
+                        historico_ia = [SystemMessage(content=prompt_completo_sistema)]
+                        for msg in st.session_state.messages:
+                            if msg["role"] == "user":
+                                historico_ia.append(HumanMessage(content=msg["content"]))
+                            else:
+                                historico_ia.append(SystemMessage(content=msg["content"]))
+                        resposta = llm_texto.invoke(historico_ia)
+                    
+                    # Exibição e gravação final da resposta na tela de forma direta
+                    st.markdown(resposta.content)
+                    st.session_state.messages.append({"role": "assistant", "content": resposta.content})
+                    
+                    arquivo_docx = criar_arquivo_word(resposta.content)
+                    st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
