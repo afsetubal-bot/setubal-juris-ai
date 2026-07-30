@@ -142,7 +142,6 @@ else:
     else:
         st.sidebar.warning("⚠️ Nenhuma lei fixa detectada na pasta 'leis_fixas'.")
 
-    # UPGRADE: Inclusão da diretriz rígida de recusa de assuntos extrajurídicos
     PROMPT_SISTEMA = (
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
@@ -184,18 +183,23 @@ else:
         if contexto_leis:
             prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
 
-        conteudo_mensagem_usuario = []
-        conteudo_mensagem_usuario.append({"type": "text", "text": prompt})
-        
+        # CORREÇÃO DA TRAVA: Lógica inteligente para estruturar a mensagem
         if dados_imagem_base64:
-            conteudo_mensagem_usuario.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
-            })
+            # Se tiver imagem, usa o formato multimodal exigido pela Groq
+            conteudo_usuario = [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
+                }
+            ]
+        else:
+            # Se NÃO tiver imagem, passa o texto puro direto. Isso evita o BadRequestError!
+            conteudo_usuario = prompt
 
         historico_ia = [
             SystemMessage(content=prompt_completo_sistema),
-            HumanMessage(content=conteudo_mensagem_usuario)
+            HumanMessage(content=conteudo_usuario)
         ]
         
         with st.chat_message("assistant"):
