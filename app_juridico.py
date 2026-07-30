@@ -1,3 +1,11 @@
+# GAMBIARRA TÉCNICA NECESSÁRIA PARA O CHROMADB RODAR NO SERVIDOR DO STREAMLIT CLOUD
+import sys
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import streamlit as st
 import os
 from pypdf import PdfReader
