@@ -16,7 +16,19 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from docx import Document
 from io import BytesIO
 
+# O comando 'initial_sidebar_state' e códigos customizados ocultam as ferramentas de desenvolvedor
 st.set_page_config(page_title="Setubal Juris AI", page_icon="⚖️", layout="wide")
+
+# Esse bloco de estilo abaixo esconde a barra preta do topo e os ícones do GitHub/Lápis
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stAppDeployButton {display:none;}
+    </style>
+    """, unsafe_allow_html=True)
+
 st.title("⚖️ Setubal Juris AI")
 st.subheader("Plataforma de Inteligência e Auditoria Jurídica")
 
