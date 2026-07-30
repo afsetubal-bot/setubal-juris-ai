@@ -165,12 +165,11 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # --- FILTRO ULTRA-SEGURO DE ESCOPO (PREVINE TRAVAMENTOS E ERROS) ---
+        # --- FILTRO CORRIGIDO: Trocado 'palabra' por 'palavra' em português ---
         palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
         prompt_minusculo = prompt.lower()
         
-        # Se detectar alguma palavra proibida, o Python recusa na hora sem chamar o servidor da IA
-        if any(palavra in prompt_minusculo for palabra in palavras_bloqueadas):
+        if any(palavra in prompt_minusculo for palavra in palavras_bloqueadas):
             resposta_recusa = (
                 "Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
                 "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal."
@@ -180,7 +179,6 @@ else:
             st.session_state.messages.append({"role": "assistant", "content": resposta_recusa})
         
         else:
-            # Caso o assunto seja Direito, o sistema segue o fluxo normal com segurança
             contexto_leis = ""
             if banco_leis is not None:
                 resultados_busca = banco_leis.similarity_search(prompt, k=2)
@@ -190,7 +188,6 @@ else:
             if contexto_leis:
                 prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
 
-            # Formatação limpa e direta exigida pelo modelo Vision da Groq para evitar o BadRequest
             if dados_imagem_base64:
                 conteudo_usuario = [
                     {"type": "text", "text": prompt},
@@ -204,7 +201,6 @@ else:
                     HumanMessage(content=conteudo_usuario)
                 ]
             else:
-                # Sem imagem: Mandamos apenas texto puro simplificado na chamada
                 historico_ia = [
                     SystemMessage(content=prompt_completo_sistema),
                     HumanMessage(content=prompt)
