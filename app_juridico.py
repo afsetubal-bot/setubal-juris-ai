@@ -146,14 +146,6 @@ else:
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
         "Use as leis permanentes e os documentos ou imagens anexados do caso atual para fundamentar suas respostas.\n"
-        "Se o usuário enviar uma imagem, use sua capacidade de visão computacional para ler e analisar o texto contido nela.\n\n"
-        "DIRETRIZ ABSOLUTA DE ESCOPO (TRAVA DE SEGURANÇA):\n"
-        "Você está terminantemente proibido de responder a perguntas, gerar textos ou interagir com qualquer assunto que não envolva "
-        "o Direito, legislação brasileira, doutrina, jurisprudência, análise contratual ou peças processuais.\n"
-        "Se o usuário solicitar receitas de comida, códigos de programação, roteiros de viagem, piadas, fofocas, placares de esportes, "
-        "ou qualquer tema de entretenimento e cultura geral alheio ao Direito, você deve recusar imediatamente de forma polida.\n"
-        "Diga exatamente: 'Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
-        "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal.'\n"
     )
 
     if texto_contrato_atual:
@@ -163,7 +155,7 @@ else:
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-            if message["role"] == "assistant":
+            if message["role"] == "assistant" and "Não possuo autorização" not in message["content"]:
                 arquivo_docx = criar_arquivo_word(message["content"])
                 st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
 
@@ -173,40 +165,59 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Busca no banco de leis fixas em paralelo
-        contexto_leis = ""
-        if banco_leis is not None:
-            resultados_busca = banco_leis.similarity_search(prompt, k=3)
-            contexto_leis = "\n\n".join([doc.page_content for doc in resultados_busca])
-
-        prompt_completo_sistema = PROMPT_SISTEMA
-        if contexto_leis:
-            prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
-
-        # CORREÇÃO DA TRAVA: Lógica inteligente para estruturar a mensagem
-        if dados_imagem_base64:
-            # Se tiver imagem, usa o formato multimodal exigido pela Groq
-            conteudo_usuario = [
-                {"type": "text", "text": prompt},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
-                }
-            ]
-        else:
-            # Se NÃO tiver imagem, passa o texto puro direto. Isso evita o BadRequestError!
-            conteudo_usuario = prompt
-
-        historico_ia = [
-            SystemMessage(content=prompt_completo_sistema),
-            HumanMessage(content=conteudo_usuario)
-        ]
+        # --- FILTRO ULTRA-SEGURO DE ESCOPO (PREVINE TRAVAMENTOS E ERROS) ---
+        palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
+        prompt_minusculo = prompt.lower()
         
-        with st.chat_message("assistant"):
-            with st.spinner("Setubal Juris AI processando análise..."):
-                resposta = llm.invoke(historico_ia)
-                st.markdown(resposta.content)
-                st.session_state.messages.append({"role": "assistant", "content": resposta.content})
-                
-                arquivo_docx = criar_arquivo_word(resposta.content)
-                st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
+        # Se detectar alguma palavra proibida, o Python recusa na hora sem chamar o servidor da IA
+        if any(palavra in prompt_minusculo for palabra in palavras_bloqueadas):
+            resposta_recusa = (
+                "Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
+                "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal."
+            )
+            with st.chat_message("assistant"):
+                st.markdown(resposta_recusa)
+            st.session_state.messages.append({"role": "assistant", "content": resposta_recusa})
+        
+        else:
+            # Caso o assunto seja Direito, o sistema segue o fluxo normal com segurança
+            contexto_leis = ""
+            if banco_leis is not None:
+                resultados_busca = banco_leis.similarity_search(prompt, k=2)
+                contexto_leis = "\n\n".join([doc.page_content for doc in resultados_busca])
+
+            prompt_completo_sistema = PROMPT_SISTEMA
+            if contexto_leis:
+                prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
+
+            # Formatação limpa e direta exigida pelo modelo Vision da Groq para evitar o BadRequest
+            if dados_imagem_base64:
+                conteudo_usuario = [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
+                    }
+                ]
+                historico_ia = [
+                    SystemMessage(content=prompt_completo_sistema),
+                    HumanMessage(content=conteudo_usuario)
+                ]
+            else:
+                # Sem imagem: Mandamos apenas texto puro simplificado na chamada
+                historico_ia = [
+                    SystemMessage(content=prompt_completo_sistema),
+                    HumanMessage(content=prompt)
+                ]
+            
+            with st.chat_message("assistant"):
+                with st.spinner("Setubal Juris AI processando análise..."):
+                    try:
+                        resposta = llm.invoke(historico_ia)
+                        st.markdown(resposta.content)
+                        st.session_state.messages.append({"role": "assistant", "content": resposta.content})
+                        
+                        arquivo_docx = criar_arquivo_word(resposta.content)
+                        st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
+                    except Exception as e:
+                        st.error("Ocorreu uma instabilidade na API de visão do Groq. Por favor, limpe o chat e tente novamente.")
