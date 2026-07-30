@@ -14,7 +14,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.messages import SystemMessage, HumanMessage
 from docx import Document
 from io import BytesIO
-import base64  # Necessário para codificar imagens para a IA ler
+import base64
 
 st.set_page_config(page_title="Setubal Juris AI", page_icon="⚖️", layout="wide")
 
@@ -106,11 +106,9 @@ groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
 else:
-    # UPGRADE: Mudança para o modelo multimodal com capacidade de visão (Llama 3.2 Vision)
     llm = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
     banco_leis = inicializar_banco_de_dados()
 
-    # ATUALIZAÇÃO: Campo de upload expandido para aceitar PDFs e Imagens (fotos)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 📁 Analisar Documento ou Foto (Caso Atual)")
     arquivo_enviado = st.sidebar.file_uploader(
@@ -125,7 +123,6 @@ else:
     if arquivo_enviado is not None:
         nome_extensao = arquivo_enviado.name.lower()
         
-        # Se for um PDF tradicional
         if nome_extensao.endswith(".pdf"):
             st.sidebar.success("Documento PDF carregado!")
             reader_contrato = PdfReader(arquivo_enviado)
@@ -133,10 +130,8 @@ else:
                 t = page.extract_text()
                 if t: texto_contrato_atual += t + "\n"
         
-        # Se for uma imagem/foto do celular
         elif nome_extensao.endswith((".png", ".jpg", ".jpeg")):
             st.sidebar.success("Foto/Imagem jurídica carregada!")
-            # Converte a imagem para uma estrutura matemática que a IA consegue ver
             tipo_mime_imagem = f"image/{'png' if nome_extensao.endswith('.png') else 'jpeg'}"
             dados_imagem_base64 = base64.b64encode(arquivo_enviado.read()).decode("utf-8")
 
@@ -147,11 +142,19 @@ else:
     else:
         st.sidebar.warning("⚠️ Nenhuma lei fixa detectada na pasta 'leis_fixas'.")
 
+    # UPGRADE: Inclusão da diretriz rígida de recusa de assuntos extrajurídicos
     PROMPT_SISTEMA = (
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
         "Use as leis permanentes e os documentos ou imagens anexados do caso atual para fundamentar suas respostas.\n"
-        "Se o usuário enviar uma imagem, use sua capacidade de visão computacional para ler e analisar o texto contido nela.\n"
+        "Se o usuário enviar uma imagem, use sua capacidade de visão computacional para ler e analisar o texto contido nela.\n\n"
+        "DIRETRIZ ABSOLUTA DE ESCOPO (TRAVA DE SEGURANÇA):\n"
+        "Você está terminantemente proibido de responder a perguntas, gerar textos ou interagir com qualquer assunto que não envolva "
+        "o Direito, legislação brasileira, doutrina, jurisprudência, análise contratual ou peças processuais.\n"
+        "Se o usuário solicitar receitas de comida, códigos de programação, roteiros de viagem, piadas, fofocas, placares de esportes, "
+        "ou qualquer tema de entretenimento e cultura geral alheio ao Direito, você deve recusar imediatamente de forma polida.\n"
+        "Diga exatamente: 'Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
+        "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal.'\n"
     )
 
     if texto_contrato_atual:
@@ -166,7 +169,7 @@ else:
                 st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
 
     # Entrada de texto do Chat
-    if prompt := st.chat_input("Ex: Transcreva e analise esta foto / Avalie a cláusula de rescisão..."):
+    if prompt := st.chat_input("Ex: Avalie a cláusula de rescisão..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -181,27 +184,22 @@ else:
         if contexto_leis:
             prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
 
-        # Montagem do conteúdo estruturado (Lógica para aceitar Texto + Imagem)
         conteudo_mensagem_usuario = []
-        
-        # Adiciona o texto digitado pelo usuário
         conteudo_mensagem_usuario.append({"type": "text", "text": prompt})
         
-        # Se houver uma imagem carregada, injeta ela na estrutura de visão da IA
         if dados_imagem_base64:
             conteudo_mensagem_usuario.append({
                 "type": "image_url",
                 "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}
             })
 
-        # Estrutura a requisição final
         historico_ia = [
             SystemMessage(content=prompt_completo_sistema),
             HumanMessage(content=conteudo_mensagem_usuario)
         ]
         
         with st.chat_message("assistant"):
-            with st.spinner("Setubal Juris AI processando análise documental/visual..."):
+            with st.spinner("Setubal Juris AI processando análise..."):
                 resposta = llm.invoke(historico_ia)
                 st.markdown(resposta.content)
                 st.session_state.messages.append({"role": "assistant", "content": resposta.content})
