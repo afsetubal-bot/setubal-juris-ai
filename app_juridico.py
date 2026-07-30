@@ -55,7 +55,7 @@ def criar_arquivo_word(texto):
     return conteudo_binario
 
 def exportar_historico_completo(mensagens):
-    if not messages:
+    if not mensagens:
         return "--- O HISTÓRICO DE ATENDIMENTO ESTÁ VAZIO ---"
     historico_texto = "--- HISTÓRICO DE ATENDIMENTO - SETUBAL JURIS AI ---\n\n"
     for msg in mensagens:
@@ -106,7 +106,7 @@ groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
 else:
-    # INICIALIZAÇÃO DE MODELOS DUPLOS PARA EVITAR INSTABILIDADES DE FORMATO
+    # Modelos duplos ativos para gerenciar texto e visão de forma isolada
     llm_texto = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, groq_api_key=groq_api_key)
     llm_visao = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
     banco_leis = inicializar_banco_de_dados()
@@ -153,7 +153,7 @@ else:
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
-    # Renderização do Chat
+    # Renderização do Chat na Interface
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -161,13 +161,13 @@ else:
                 arquivo_docx = criar_arquivo_word(message["content"])
                 st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
 
-    # Entrada de texto do Chat
+    # Processamento da entrada do usuário
     if prompt := st.chat_input("Ex: Avalie a cláusula de rescisão..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # 1. FILTRO DE ESCOPO JURÍDICO INTERNO
+        # Filtro de escopo jurídico preventivo
         palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
         prompt_minusculo = prompt.lower()
         
@@ -181,7 +181,6 @@ else:
             st.session_state.messages.append({"role": "assistant", "content": resposta_recusa})
         
         else:
-            # 2. BUSCA NO BANCO VETORIAL DE LEIS
             contexto_leis = ""
             if banco_leis is not None:
                 resultados_busca = banco_leis.similarity_search(prompt, k=2)
@@ -191,12 +190,10 @@ else:
             if contexto_leis:
                 prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
 
-            # 3. ESCOLHA INTELIGENTE DO MODELO DE IA DEPENDENDO DO INPUT (BLINDAGEM EXTRA CONTRA ERROS)
             with st.chat_message("assistant"):
                 with st.spinner("Setubal Juris AI processando..."):
                     try:
                         if dados_imagem_base64:
-                            # Se o usuário enviou uma FOTO, ativa o modelo de Visão com o formato estruturado
                             conteudo_usuario = [
                                 {"type": "text", "text": prompt},
                                 {
@@ -210,12 +207,15 @@ else:
                             ]
                             resposta = llm_visao.invoke(historico_ia)
                         else:
-                            # Se for apenas TEXTO (como a pergunta do Artigo 1), usa o poderoso Llama 3.3 de texto puro com histórico limpo
                             historico_ia = [SystemMessage(content=prompt_completo_sistema)]
                             for msg in st.session_state.messages:
-                                historico_ia.append(HumanMessage(content=msg["content"]) if msg["role"] == "user" else SystemMessage(content=msg["content"]))
+                                if msg["role"] == "user":
+                                    historico_ia.append(HumanMessage(content=msg["content"]))
+                                else:
+                                    historico_ia.append(SystemMessage(content=msg["content"]))
                             resposta = llm_texto.invoke(historico_ia)
                         
                         st.markdown(resposta.content)
                         st.session_state.messages.append({"role": "assistant", "content": resposta.content})
                         
+                        arquivo_docx = criar_arquivo_word(resposta.content)
