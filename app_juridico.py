@@ -15,6 +15,7 @@ st.subheader("Plataforma de Inteligência e Auditoria Jurídica")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# BARRA LATERAL: Configuração das ferramentas
 st.sidebar.header("🏛️ Painel Setubal Juris")
 st.sidebar.markdown("### 💾 Gestão da Sessão")
 
@@ -52,17 +53,43 @@ st.sidebar.download_button(
     mime="text/plain"
 )
 
-# Buscando a chave direto das configurações ocultas da Nuvem (Secrets)
+# Caminhos configurados corretamente para a nuvem ler do GitHub
+PASTA_LEIS = os.path.join(os.path.dirname(__file__), "leis_fixas")
+PASTA_BANCO = os.path.join(os.path.dirname(__file__), "banco_vetorial")
+os.makedirs(PASTA_LEIS, exist_ok=True)
+
+@st.cache_resource
+def inicializar_banco_de_dados():
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    if os.path.exists(PASTA_BANCO) and len(os.listdir(PASTA_BANCO)) > 0:
+        return Chroma(persist_directory=PASTA_BANCO, embedding_function=embeddings)
+    
+    documentos_texto = []
+    if os.path.exists(PASTA_LEIS):
+        arquivos = [f for f in os.listdir(PASTA_LEIS) if f.endswith(".pdf")]
+        if not arquivos:
+            return None
+        for arquivo in arquivos:
+            caminho_completo = os.path.join(PASTA_LEIS, arquivo)
+            reader = PdfReader(caminho_completo)
+            for page in reader.pages:
+                texto_pag = page.extract_text()
+                if texto_pag:
+                    documentos_texto.append(texto_pag)
+                    
+    if documentos_texto:
+        banco = Chroma.from_texts(texts=documentos_texto, embedding=embeddings, persist_directory=PASTA_BANCO)
+        return banco
+    return None
+
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
 else:
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, groq_api_key=groq_api_key)
-    
-    # Na nuvem, salvamos temporariamente os vetores na memória do contêiner
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    
+    banco_leis = inicializar_banco_de_dados()
+
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 📁 Analisar Novo Documento (Caso Atual)")
     contrato_enviado = st.sidebar.file_uploader("Insira um contrato ou petição em PDF para auditoria", type=["pdf"])
@@ -75,10 +102,17 @@ else:
             t = page.extract_text()
             if t: texto_contrato_atual += t + "\n"
 
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔍 Status do Banco de Leis Fixo")
+    if banco_leis is not None:
+        st.sidebar.success("💻 Banco de Legislação Permanente: ATIVO")
+    else:
+        st.sidebar.warning("⚠️ Nenhuma lei fixa detectada na pasta 'leis_fixas'.")
+
     PROMPT_SISTEMA = (
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
-        "Use os trechos anexados do caso atual para fundamentar suas respostas.\n"
+        "Use os trechos de leis permanentes e os documentos anexados do caso atual para fundamentar suas respostas.\n"
     )
 
     if texto_contrato_atual:
@@ -96,7 +130,16 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        historico_ia = [SystemMessage(content=PROMPT_SISTEMA)]
+        contexto_leis = ""
+        if banco_leis is not None:
+            resultados_busca = banco_leis.similarity_search(prompt, k=3)
+            contexto_leis = "\n\n".join([doc.page_content for doc in resultados_busca])
+
+        prompt_completo_sistema = PROMPT_SISTEMA
+        if contexto_leis:
+            prompt_completo_sistema += f"\nTRECHOS DE LEIS BASE ENCONTRADOS NO BANCO VETORIAL:\n{contexto_leis}\n"
+
+        historico_ia = [SystemMessage(content=prompt_completo_sistema)]
         for msg in st.session_state.messages:
             if msg["role"] == "user":
                 historico_ia.append(HumanMessage(content=msg["content"]))
