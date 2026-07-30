@@ -1,0 +1,2 @@
+# setubal-juris-ai
+AI
