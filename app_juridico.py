@@ -15,7 +15,7 @@ from docx import Document
 from io import BytesIO
 import base64
 
-# Nova biblioteca para geração cirúrgica de PDFs na nuvem
+# Carregamento seguro da biblioteca de PDFs
 try:
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -34,7 +34,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Esconder ferramentas de desenvolvimento do Streamlit na direita mantendo o botão do celular na esquerda
+# Ocultar utilitários de desenvolvimento na direita mantendo o botão do celular na esquerda
 st.markdown("""
     <style>
     .stAppDeployButton { display: none !important; }
@@ -71,7 +71,6 @@ def criar_arquivo_pdf(texto):
     doc = SimpleDocTemplate(conteudo_binario, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
-    # Criar estilo customizado para o texto jurídico do PDF
     estilo_juridico = ParagraphStyle(
         'EstiloJuridico',
         parent=styles['Normal'],
@@ -134,20 +133,18 @@ if st.session_state.historico_casos:
             key=f"dl_{nome_caso}"
         )
 
-# 📊 NOVA FERRAMENTA: CALCULADORA DE PRAZOS EM DIAS ÚTEIS (CPC)
+# 📊 CALCULADORA DE PRAZOS EM DIAS ÚTEIS (CPC)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
     dias_contados = 0
-    # O prazo no CPC começa a contar no primeiro dia útil SEGUINTE à intimação
     while dias_contados < dias_uteis:
         data_corrente += datetime.timedelta(days=1)
-        # Se não for sábado (5) e não for domingo (6), conta como dia útil
         if data_corrente.weekday() < 5:
             dias_contados += 1
     return data_corrente
@@ -190,7 +187,6 @@ TEMPLATE_INTIMACAO = """Analise minuciosamente o teor do texto da publicação d
 Aqui está o texto/documento para análise:
 [Cole aqui o texto da publicação ou apenas digite 'Analisar arquivo anexo']"""
 
-# --- NOVOS TEMPLATES SOLICITADOS NO PADRÃO DE MERCADO ---
 TEMPLATE_PROCURACAO = """Redija um instrumento de PROCURAÇÃO AD JUDICIA ET EXTRA de acordo com as normas vigentes do CPC brasileiro, contendo a seguinte estrutura e poderes:
 
 Outorgante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Eletrônico e Residencial]
@@ -206,7 +202,6 @@ TEMPLATE_GRATUITA = """Redija uma DECLARAÇÃO DE HIPOSSUFICIÊNCIA ECONÔMICA (
 Declarante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Residencial]
 
 O documento deve atestar formalmente que o declarante não possui condições financeiras de arcar com as custas processuais e honorários advocatícios sem prejuízo do sustento próprio e de sua família, sob as penas da lei. Inclua campo para Data, Local e Assinatura. Gere o rascunho completo e formal."""
-
 
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
@@ -235,7 +230,6 @@ if st.sidebar.button("⚖️ Procuração Ad Judicia"):
 if st.sidebar.button("📜 Declaração Justiça Gratuita"):
     st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
     st.rerun()
-
 
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
@@ -304,21 +298,36 @@ else:
                     arquivo_pdf = criar_arquivo_pdf(message["content"])
                     st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"documento_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 
-    prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
-    
-    if st.session_state["prompt_input_value"]:
-        st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
-        prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
+    # --- TRAVA DE CONFORMIDADE LEGAL RÍGIDA DA LGPD ---
+    st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
+    termo_lgpd = st.checkbox(
+        "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
+        "inserção dos documentos e dados pessoais anexados neste caso, ciente de que a plataforma opera sob "
+        "criptografia fim a fim e em estrito cumprimento às normas da Lei nº 13.709/18 (LGPD)."
+    )
+
+    prompt = None
+
+    # Se o advogado aceitar o termo da LGPD, o chat e a gaveta de modelos são liberados
+    if termo_lgpd:
+        prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
         
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            if st.button("🚀 Enviar para IA", type="primary"):
-                prompt = prompt_editado
-                st.session_state["prompt_input_value"] = ""
-        with col_btn2:
-            if st.button("❌ Cancelar Modelo"):
-                st.session_state["prompt_input_value"] = ""
-                st.rerun()
+        if st.session_state["prompt_input_value"]:
+            st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
+            prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
+            
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("🚀 Enviar para IA", type="primary"):
+                    prompt = prompt_editado
+                    st.session_state["prompt_input_value"] = ""
+            with col_btn2:
+                if st.button("❌ Cancelar Modelo"):
+                    st.session_state["prompt_input_value"] = ""
+                    st.rerun()
+    else:
+        # Mensagem de bloqueio amigável enquanto a caixinha não for marcada
+        st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD acima para liberar a barra de digitação e a edição de modelos rápidos.")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -352,7 +361,6 @@ else:
                             else:
                                 historico_ia.append(SystemMessage(content=msg["content"]))
                         resposta = llm_texto.invoke(historico_ia)
-                    
                     st.markdown(resposta.content)
                     st.session_state.messages.append({"role": "assistant", "content": resposta.content})
                     
