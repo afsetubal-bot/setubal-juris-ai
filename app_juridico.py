@@ -151,6 +151,7 @@ def calcular_prazo_util(data_inicial, dias_uteis):
 
 data_fatal = calcular_prazo_util(data_intimacao, tipo_prazo)
 st.sidebar.info(f"📅 **Prazo Fatal Exato:** {data_fatal.strftime('%d/%m/%Y')} ({tipo_prazo} dias úteis)")
+
 # 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
 TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
 
@@ -168,7 +169,7 @@ Dados Base:
 - Contratante: [Nome/Qualificação]
 - Contratado: [Nome/Qualificação]
 
-Gere o contrato com redação formal e pronto para assinatura."""
+Gere o contrato com redação formal and pronto para assinatura."""
 
 TEMPLATE_NOTIFICACAO = """Redija uma NOTIFICAÇÃO EXTRAJUDICIAL formal com o objetivo de constituir o Notificado em mora e buscar uma composição amigável antes das medidas judiciais.
 
@@ -201,7 +202,6 @@ Declarante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, En
 
 O documento deve atestar formalmente que o declarante não possui condições financeiras de arcar com as custas processuais. Gere o rascunho completo."""
 
-# --- NOVO TEMPLATE AUTOMÁTICO DE CLÁUSULA DE ASSINATURAS E ENCERRAMENTO ---
 TEMPLATE_ENCERRAMENTO = """Gere uma FOLHA DE ASSINATURAS E TERMO DE ENCERRAMENTO PADRÃO JURÍDICO para aposição em contratos ou acordos extrajudiciais.
 
 Estruture o texto exatamente assim:
@@ -225,6 +225,8 @@ TESTEMUNHA 2:
 Nome:
 CPF:"""
 
+# --- TEMPLATE: FICHA DE TRIAGEM E ATENDIMENTO INICIAL DE CLIENTES ---
+TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo, elabore uma FICHA DE ATENDIMENTO E TRIAGEM JURÍDICA completa e profissional estruturada nos seguintes tópicos:
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
@@ -253,10 +255,15 @@ if st.sidebar.button("📜 Declaração Justiça Gratuita"):
     st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
     st.rerun()
 
-# Inclusão do novo botão técnico de encerramento
 if st.sidebar.button("✒️ Termo de Encerramento"):
     st.session_state["prompt_input_value"] = TEMPLATE_ENCERRAMENTO
     st.rerun()
+
+# Novo botão técnico integrado de triagem e ficha do cliente
+if st.sidebar.button("📝 Ficha de Atendimento"):
+    st.session_state["prompt_input_value"] = TEMPLATE_FICHA
+    st.rerun()
+
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
@@ -275,6 +282,15 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
+# 📋 NOVO MENU COMPLEMENTAR: TABELA DE PRAZOS FREQUENTES DO CPC
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
+with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
+    st.markdown("**• Contestação / Réplica:** 15 dias úteis")
+    st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
+    st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
+    st.markdown("**• Embargos de Declaração:** 5 dias úteis")
+    st.markdown("**• Manifestação Documental:** 15 dias úteis")
 # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
@@ -304,7 +320,6 @@ else:
             tipo_mime_imagem = f"image/{'png' if name_extensao.endswith('.png') else 'jpeg'}"
             dados_imagem_base64 = base64.b64encode(arquivo_enviado.read()).decode("utf-8")
 
-    # UPGRADE: Inclusão de regras estritas de formatação forense (ABNT de tribunais)
     PROMPT_SISTEMA = (
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
@@ -402,3 +417,4 @@ else:
                     with col_dl2:
                         arquivo_pdf = criar_arquivo_pdf(resposta.content)
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name="documento_setubal_juris.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
+
