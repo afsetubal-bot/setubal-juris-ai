@@ -22,35 +22,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
 )
 
-# BLOCO CIRÚRGICO: Remove os botões da direita preservando o botão de abrir o menu na esquerda
+# SOLUÇÃO DEFINITIVA: Oculta apenas os botões da direita e protege o botão do celular em qualquer estado
 st.markdown("""
     <style>
-    /* Oculta o botão Deploy */
+    /* Esconde o botão Deploy */
     .stAppDeployButton {
         display: none !important;
     }
-    /* Oculta os elementos específicos da extrema direita do topo */
+    /* Oculta os botões extras da direita (GitHub, Estrela, Lápis) sem quebrar a barra do topo */
+    div[data-testid="stHeaderActionElements"],
     button[data-testid="stHeaderActionButton"],
-    div[data-testid="stToolbar"],
-    .stActionButton,
     #MainMenu {
         display: none !important;
         visibility: hidden !important;
     }
-    /* Mantém o botão do menu lateral esquerdo visível e reposicionado se necessário */
-    button[data-testid="stSidebarCollapseButton"] {
+    /* Força o botão de Abrir/Fechar a ficar visível mesmo quando a barra estiver recolhida */
+    button[data-testid="stSidebarCollapseButton"],
+    button[aria-label="Expand sidebar"],
+    button[aria-label="Collapse sidebar"] {
         display: flex !important;
         visibility: visible !important;
+        opacity: 1 !important;
     }
-    /* Esconde o rodapé */
+    /* Esconde o rodapé padrão */
     footer {
         visibility: hidden !important;
     }
     </style>
     """, unsafe_allow_html=True)
-
-
-
 st.title("⚖️ Setubal Juris AI")
 st.subheader("Plataforma de Inteligência, Auditoria e Visão Jurídica")
 
