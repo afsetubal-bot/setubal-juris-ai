@@ -263,7 +263,7 @@ else:
         st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
         prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
         
-        col_btn1, col_btn2 = st.columns()
+        col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             if st.button("🚀 Enviar para IA", type="primary"):
                 prompt = prompt_editado
