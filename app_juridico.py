@@ -22,12 +22,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
 )
 
-# Esconder ferramentas de desenvolvimento do Streamlit no topo
+# BLOCO ATUALIZADO: Oculta estritamente os ícones de desenvolvedor da direita
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stAppDeployButton {display:none;}
+    /* Oculta o botão Deploy */
+    .stAppDeployButton {
+        display: none !important;
+    }
+    /* Oculta os botões extras do topo direito (GitHub, Estrela, etc.) */
+    [data-testid="stStatusWidget"] {
+        display: none !important;
+    }
+    /* Oculta o menu de configurações do desenvolvedor */
+    #MainMenu {
+        visibility: hidden !important;
+    }
+    /* Oculta o rodapé padrão */
+    footer {
+        visibility: hidden !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
