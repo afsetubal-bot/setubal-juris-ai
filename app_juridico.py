@@ -193,15 +193,37 @@ Outorgante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, En
 Outorgado: [Nome do Advogado, Inscrição na OAB/UF nº, Endereço do Escritório]
 
 Poderes: Cláusula 'Ad Judicia et Extra' para representação em qualquer Juízo, Instância ou Tribunal, ou fora deles.
-Poderes Especiais: Inclua os poderes específicos do artigo 105 do CPC (receber citação, confessar, reconhecer a procedência do pedido, transigir, desistir, renunciar ao direito, receber, dar quitação, firmar compromisso e substabelecer com ou sem reserva de poderes).
-
-Gere o documento formal completo pronto para preenchimento."""
+Poderes Especiais: Inclua os poderes específicos do artigo 105 do CPC. Gere o documento formal completo."""
 
 TEMPLATE_GRATUITA = """Redija uma DECLARAÇÃO DE HIPOSSUFICIÊNCIA ECONÔMICA (DECLARAÇÃO DE JUSTIÇA GRATUITA) formal nos termos do Artigo 98 e seguintes do Código de Processo Civil (CPC) e do Artigo 5º, inciso LXXIV da Constituição Federal.
 
 Declarante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Residencial]
 
-O documento deve atestar formalmente que o declarante não possui condições financeiras de arcar com as custas processuais e honorários advocatícios sem prejuízo do sustento próprio e de sua família, sob as penas da lei. Inclua campo para Data, Local e Assinatura. Gere o rascunho completo e formal."""
+O documento deve atestar formalmente que o declarante não possui condições financeiras de arcar com as custas processuais. Gere o rascunho completo."""
+
+# --- NOVO TEMPLATE AUTOMÁTICO DE CLÁUSULA DE ASSINATURAS E ENCERRAMENTO ---
+TEMPLATE_ENCERRAMENTO = """Gere uma FOLHA DE ASSINATURAS E TERMO DE ENCERRAMENTO PADRÃO JURÍDICO para aposição em contratos ou acordos extrajudiciais.
+
+Estruture o texto exatamente assim:
+Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] para dirimir quaisquer dúvidas decorrentes deste instrumento, assinando o presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
+
+[Localidade - UF], [Data].
+
+__________________________________
+CONTRATANTE: [Nome]
+
+__________________________________
+CONTRATADO: [Nome]
+
+__________________________________
+TESTEMUNHA 1:
+Nome:
+CPF:
+
+__________________________________
+TESTEMUNHA 2:
+Nome:
+CPF:"""
 
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
@@ -231,6 +253,10 @@ if st.sidebar.button("📜 Declaração Justiça Gratuita"):
     st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
     st.rerun()
 
+# Inclusão do novo botão técnico de encerramento
+if st.sidebar.button("✒️ Termo de Encerramento"):
+    st.session_state["prompt_input_value"] = TEMPLATE_ENCERRAMENTO
+    st.rerun()
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
@@ -248,6 +274,7 @@ with st.sidebar.expander("🔍 Pesquisa e Legislação"):
 with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
+
 # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
@@ -277,15 +304,21 @@ else:
             tipo_mime_imagem = f"image/{'png' if name_extensao.endswith('.png') else 'jpeg'}"
             dados_imagem_base64 = base64.b64encode(arquivo_enviado.read()).decode("utf-8")
 
+    # UPGRADE: Inclusão de regras estritas de formatação forense (ABNT de tribunais)
     PROMPT_SISTEMA = (
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
-        "Você tem conhecimento pleno de toda a legislação brasileira. Fundamente suas respostas nos artigos vigentes.\n"
+        "Você tem conhecimento pleno de toda a legislação brasileira. Fundamente suas respostas nos artigos vigentes.\n\n"
+        "DIRETRIZ DE FORMATAÇÃO FORENSE OAB/ABNT:\n"
+        "Ao redigir peças processuais, contratos, procurações ou pareceres, estruture o texto com rigor técnico visual:\n"
+        "- Utilize títulos em CAIXA ALTA e negrito para divisões de seções (ex: DOS FATOS, DO DIREITO).\n"
+        "- Garanta parágrafos bem espaçados.\n"
+        "- Citações de jurisprudências, ementas ou artigos longos devem vir em blocos isolados e destacados, "
+        "simulando o recuo padrão de 4cm exigido pela técnica forense de peticionamento.\n"
     )
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
-    # IMPRESSÃO DO CHAT HISTÓRICO COM DUPLO BOTÃO DE EXPORTAÇÃO (WORD + PDF)
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -298,7 +331,6 @@ else:
                     arquivo_pdf = criar_arquivo_pdf(message["content"])
                     st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"documento_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 
-    # --- TRAVA DE CONFORMIDADE LEGAL RÍGIDA DA LGPD ---
     st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
     termo_lgpd = st.checkbox(
         "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
@@ -308,7 +340,6 @@ else:
 
     prompt = None
 
-    # Se o advogado aceitar o termo da LGPD, o chat e a gaveta de modelos são liberados
     if termo_lgpd:
         prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
         
@@ -326,7 +357,6 @@ else:
                     st.session_state["prompt_input_value"] = ""
                     st.rerun()
     else:
-        # Mensagem de bloqueio amigável enquanto a caixinha não for marcada
         st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD acima para liberar a barra de digitação e a edição de modelos rápidos.")
 
     if prompt:
@@ -361,6 +391,7 @@ else:
                             else:
                                 historico_ia.append(SystemMessage(content=msg["content"]))
                         resposta = llm_texto.invoke(historico_ia)
+                    
                     st.markdown(resposta.content)
                     st.session_state.messages.append({"role": "assistant", "content": resposta.content})
                     
