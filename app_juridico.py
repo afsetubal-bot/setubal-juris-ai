@@ -27,7 +27,6 @@ st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     .stAppDeployButton {display:none;}
     </style>
     """, unsafe_allow_html=True)
