@@ -14,99 +14,44 @@ from docx import Document
 from io import BytesIO
 import base64
 
-# CONFIGURAÇÃO DE TELA E MENU DO CELULAR EXPANDIDO
+# CONFIGURAÇÃO COM SUPORTE AUTOMÁTICO PARA EXPANDIR O MENU NO CELULAR
 st.set_page_config(
     page_title="Setubal Juris AI", 
     page_icon="⚖️", 
     layout="wide", 
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
 )
 
-# DESIGN PREMIUM: Aplicação de Paleta Corporativa (Grafite, Dourado e Marfim)
+# SOLUÇÃO DEFINITIVA: Oculta apenas os botões da direita e protege o botão do celular em qualquer estado
 st.markdown("""
     <style>
-    /* Ocultar elementos de desenvolvimento */
-    .stAppDeployButton { display: none !important; }
-    div[data-testid="stHeaderActionElements"], button[data-testid="stHeaderActionButton"], #MainMenu { display: none !important; visibility: hidden !important; }
-    footer { visibility: hidden !important; }
-    
-    /* Forçar a persistência do botão sanduíche no celular */
-    button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
-        display: flex !important; visibility: visible !important; opacity: 1 !important; color: #D4AF37 !important;
+    /* Esconde o botão Deploy */
+    .stAppDeployButton {
+        display: none !important;
     }
-
-    /* Fundo Geral do Aplicativo (Grafite Escuro) */
-    .stApp {
-        background-color: #1A1A1A !important;
-        color: #F5F5F0 !important;
+    /* Oculta os botões extras da direita (GitHub, Estrela, Lápis) sem quebrar a barra do topo */
+    div[data-testid="stHeaderActionElements"],
+    button[data-testid="stHeaderActionButton"],
+    #MainMenu {
+        display: none !important;
+        visibility: hidden !important;
     }
-
-    /* Estilização da Barra Lateral */
-    section[data-testid="stSidebar"] {
-        background-color: #121212 !important;
-        border-right: 1px solid #2C2C28 !important;
+    /* Força o botão de Abrir/Fechar a ficar visível mesmo quando a barra estiver recolhida */
+    button[data-testid="stSidebarCollapseButton"],
+    button[aria-label="Expand sidebar"],
+    button[aria-label="Collapse sidebar"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
-    section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h3 {
-        color: #E6E6FA !important;
-    }
-
-    /* Títulos em Dourado / Bronze Imperial */
-    h1, h2, h3, .stSubheader {
-        color: #D4AF37 !important;
-        font-family: 'Georgia', serif !important;
-        font-weight: bold !important;
-    }
-
-    /* Caixas de Mensagens do Advogado (User) */
-    div[data-testid="stChatMessage"]:nth-child(even) {
-        background-color: #262626 !important;
-        border-left: 4px solid #D4AF37 !important;
-        border-radius: 4px !important;
-        color: #F5F5F0 !important;
-    }
-
-    /* Caixas de Mensagens da IA (Assistant) */
-    div[data-testid="stChatMessage"]:nth-child(odd) {
-        background-color: #1E1E1E !important;
-        border-left: 4px solid #4A6984 !important;
-        border-radius: 4px !important;
-        color: #E2E8F0 !important;
-    }
-
-    /* Customização de Botões Clicáveis */
-    .stButton>button {
-        background-color: #2C2C28 !important;
-        color: #D4AF37 !important;
-        border: 1px solid #D4AF37 !important;
-        transition: all 0.3s ease !important;
-    }
-    .stButton>button:hover {
-        background-color: #D4AF37 !important;
-        color: #1A1A1A !important;
-        border: 1px solid #D4AF37 !important;
-    }
-    
-    /* Botões de Ação Primária (Como Enviar para IA) */
-    div.stButton > button[type="submit"], button[data-baseweb="button"] {
-        border-radius: 4px !important;
-    }
-    
-    /* Caixas Sanfonadas de Links Úteis */
-    .stExpander {
-        background-color: #1E1E1E !important;
-        border: 1px solid #2C2C28 !important;
-    }
-    
-    /* Links Hipertexto da Barra Lateral */
-    a {
-        color: #D4AF37 !important;
-        text-decoration: none !important;
-    }
-    a:hover {
-        text-decoration: underline !important;
+    /* Esconde o rodapé padrão */
+    footer {
+        visibility: hidden !important;
     }
     </style>
     """, unsafe_allow_html=True)
+st.title("⚖️ Setubal Juris AI")
+st.subheader("Plataforma de Inteligência, Auditoria e Visão Jurídica")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -135,7 +80,7 @@ def exportar_historico_completo(mensagens):
         historico_texto += "-"*50 + "\n\n"
     return historico_texto
 
-# BARRA LATERAL (No celular, inicia expandida por padrão)
+# BARRA LATERAL PRINCIPAL
 st.sidebar.header("🏛️ Painel Setubal Juris")
 st.sidebar.markdown("### 💾 Gestão da Sessão")
 
@@ -196,7 +141,7 @@ Cláusula 1ª - Do Objeto e Escopo.
 Cláusula 2ª - Das Obrigações do Contratante.
 Cláusula 3ª - Das Obrigações do Contratado.
 Cláusula 4ª - Do Preço e das Condições de Pagamento (incluindo multa e juros de mora por atraso).
-Cláusula 5ª - Da Rescisão e Cláusula Penal (multa rescisória profissional em caso de quebra contratual imotivada).
+Cláusula 5ª - Da Rescisão e Cláusula Penal (multa rescisória profissional em caso de quebra).
 Cláusula 6ª - Da Confidencialidade e Sigilo das Informações (LGPD).
 Cláusula 7ª - Do Foro de Eleição para dirimir litígios.
 
@@ -204,7 +149,7 @@ Gere o contrato com redação formal e pronto para assinatura."""
 
 TEMPLATE_NOTIFICACAO = """À Atenção de: [Nome do Notificado] / Endereço: [Inserir Endereço].
 
-Redija uma NOTIFICAÇÃO EXTRAJUDICIAL formal com o objetivo de constituir o Notificado em mora e buscar uma composition amigável antes das medidas judiciais.
+Redija uma NOTIFICAÇÃO EXTRAJUDICIAL formal com o objetivo de constituir o Notificado em mora e buscar uma composição amigável antes das medidas judiciais.
 
 Informações base:
 - Notificante: [Nome/Qualificação]
@@ -219,6 +164,7 @@ Estruture o documento exatamente assim:
 
 Gere o documento final formal."""
 
+# NOVO TEMPLATE: INTELIGÊNCIA DE TRIAGEM DE INTIMAÇÕES, DECISÕES E PRAZOS DO CPC
 TEMPLATE_INTIMACAO = """Analise minuciosamente o teor do texto da publicação do Diário Oficial ou da imagem da decisão anexada e elabore um PARECER DE TRIAGEM PROCESSUAL estruturado estritamente nos seguintes tópicos:
 
 1. **O COMANDO REAL (O 'PRETO NO BRANCO')**: Explique em linguagem simples, direta e sem juridiquês o que o magistrado ou tribunal efetivamente determinou (ex: concedeu liminar, extinguiu sem resolução do mérito, determinou emenda, etc.).
@@ -244,6 +190,7 @@ if st.sidebar.button("📧 Notificação Extrajudicial"):
     st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
     st.rerun()
 
+# NOVO BOTÃO DA ROTINA INTEGRADO
 if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
     st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
     st.rerun()
@@ -265,7 +212,8 @@ with st.sidebar.expander("🔍 Pesquisa e Legislação"):
 with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
-# CARREGAMENTO DA CHAVE e PROCESSAMENTO
+
+# CARREGAMENTO DA CHAVE
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
