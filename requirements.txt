@@ -7,3 +7,4 @@ chromadb
 langchain-community
 sentence-transformers
 pysqlite3-binary
+reportlab
