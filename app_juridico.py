@@ -7,6 +7,7 @@ except ImportError:
 
 import streamlit as st
 import os
+import datetime
 from pypdf import PdfReader
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -14,42 +15,37 @@ from docx import Document
 from io import BytesIO
 import base64
 
-# CONFIGURAÇÃO COM SUPORTE AUTOMÁTICO PARA EXPANDIR O MENU NO CELULAR
+# Nova biblioteca para geração cirúrgica de PDFs na nuvem
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+except ImportError:
+    os.system("pip install reportlab")
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+# Configuração de tela e menu do celular expandido por padrão
 st.set_page_config(
     page_title="Setubal Juris AI", 
     page_icon="⚖️", 
     layout="wide", 
-    initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
+    initial_sidebar_state="expanded"
 )
 
-# SOLUÇÃO DEFINITIVA: Oculta apenas os botões da direita e protege o botão do celular em qualquer estado
+# Esconder ferramentas de desenvolvimento do Streamlit na direita mantendo o botão do celular na esquerda
 st.markdown("""
     <style>
-    /* Esconde o botão Deploy */
-    .stAppDeployButton {
-        display: none !important;
-    }
-    /* Oculta os botões extras da direita (GitHub, Estrela, Lápis) sem quebrar a barra do topo */
-    div[data-testid="stHeaderActionElements"],
-    button[data-testid="stHeaderActionButton"],
-    #MainMenu {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    /* Força o botão de Abrir/Fechar a ficar visível mesmo quando a barra estiver recolhida */
-    button[data-testid="stSidebarCollapseButton"],
-    button[aria-label="Expand sidebar"],
-    button[aria-label="Collapse sidebar"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    /* Esconde o rodapé padrão */
-    footer {
-        visibility: hidden !important;
+    .stAppDeployButton { display: none !important; }
+    div[data-testid="stHeaderActionElements"], button[data-testid="stHeaderActionButton"], #MainMenu { display: none !important; visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+    button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
+        display: flex !important; visibility: visible !important; opacity: 1 !important;
     }
     </style>
     """, unsafe_allow_html=True)
+
 st.title("⚖️ Setubal Juris AI")
 st.subheader("Plataforma de Inteligência, Auditoria e Visão Jurídica")
 
@@ -67,6 +63,32 @@ def criar_arquivo_word(texto):
         doc.add_paragraph(linha)
     conteudo_binario = BytesIO()
     doc.save(conteudo_binario)
+    conteudo_binario.seek(0)
+    return conteudo_binario
+
+def criar_arquivo_pdf(texto):
+    conteudo_binario = BytesIO()
+    doc = SimpleDocTemplate(conteudo_binario, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+    
+    # Criar estilo customizado para o texto jurídico do PDF
+    estilo_juridico = ParagraphStyle(
+        'EstiloJuridico',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11,
+        leading=16,
+        spaceAfter=10
+    )
+    
+    texto_limpo = texto.replace("**", "").replace("###", "")
+    elementos = []
+    for linha in texto_limpo.split("\n"):
+        if linha.strip():
+            elementos.append(Paragraph(linha, estilo_juridico))
+            elementos.append(Spacer(1, 6))
+            
+    doc.build(elementos)
     conteudo_binario.seek(0)
     return conteudo_binario
 
@@ -111,6 +133,27 @@ if st.session_state.historico_casos:
             mime="text/plain", 
             key=f"dl_{nome_caso}"
         )
+
+# 📊 NOVA FERRAMENTA: CALCULADORA DE PRAZOS EM DIAS ÚTEIS (CPC)
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
+
+data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
+
+def calcular_prazo_util(data_inicial, dias_uteis):
+    data_corrente = data_inicial
+    dias_contados = 0
+    # O prazo no CPC começa a contar no primeiro dia útil SEGUINTE à intimação
+    while dias_contados < dias_uteis:
+        data_corrente += datetime.timedelta(days=1)
+        # Se não for sábado (5) e não for domingo (6), conta como dia útil
+        if data_corrente.weekday() < 5:
+            dias_contados += 1
+    return data_corrente
+
+data_fatal = calcular_prazo_util(data_intimacao, tipo_prazo)
+st.sidebar.info(f"📅 **Prazo Fatal Exato:** {data_fatal.strftime('%d/%m/%Y')} ({tipo_prazo} dias úteis)")
 # 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
 TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
 
@@ -120,59 +163,50 @@ Redija uma PETIÇÃO INICIAL de AÇÃO DE COBRANÇA no rito comum do CPC, basean
 - Fato: Inadimplemento de obrigação contratual líquida e certa.
 - Valor do Débito atualizado: R$ [Inserir Valor].
 
-Siga estritamente o padrão das melhores advocacias, estruturando a peça com:
-1. Endereçamento e Qualificação das partes.
-2. Dos Fatos (narrativa jurídica clara).
-3. Do Direito (fundamentação com os artigos 389 e seguintes do Código Civil, combinados com as normas do CPC).
-4. Dos Pedidos (citação do réu, procedência total da ação, condenação em custas e honorários advocatícios de sucumbência conforme artigo 85, § 2º do CPC, e interesse na audiência de conciliação).
-5. Dá-se à causa o valor de R$ [Valor].
+Siga estritamente o padrão das melhores advocacias, estruturando a peça com: Dos Fatos, Do Direito (artigos 389 e seg. do CC e normas do CPC) e Dos Pedidos cíveis de praxe. Gere a peça completa."""
 
-Gere a peça completa e formal."""
+TEMPLATE_CONTRATO = """Redija um CONTRATO DE PRESTAÇÃO DE SERVIÇOS profissional no padrão das grandes bancas de advocacia do país, estruturado com as cláusulas completas de: Objeto e Escopo, Obrigações das partes, Preço e Condições de Pagamento, Rescisão e Cláusula Penal, Confidencialidade (LGPD) e Foro de Eleição.
 
-TEMPLATE_CONTRATO = """Redija um CONTRATO DE PRESTAÇÃO DE SERVIÇOS profissional no padrão das grandes bancas de advocacia do país, estruturado com as seguintes cláusulas:
-
+Dados Base:
 - Contratante: [Nome/Qualificação]
 - Contratado: [Nome/Qualificação]
-- Objeto do Serviço: [Descrever o serviço de forma técnica]
-- Valor e Condições: [Inserir valor e datas de pagamento]
-
-O contrato deve conter de forma minuciosa:
-Cláusula 1ª - Do Objeto e Escopo.
-Cláusula 2ª - Das Obrigações do Contratante.
-Cláusula 3ª - Das Obrigações do Contratado.
-Cláusula 4ª - Do Preço e das Condições de Pagamento (incluindo multa e juros de mora por atraso).
-Cláusula 5ª - Da Rescisão e Cláusula Penal (multa rescisória profissional em caso de quebra).
-Cláusula 6ª - Da Confidencialidade e Sigilo das Informações (LGPD).
-Cláusula 7ª - Do Foro de Eleição para dirimir litígios.
 
 Gere o contrato com redação formal e pronto para assinatura."""
 
-TEMPLATE_NOTIFICACAO = """À Atenção de: [Nome do Notificado] / Endereço: [Inserir Endereço].
-
-Redija uma NOTIFICAÇÃO EXTRAJUDICIAL formal com o objetivo de constituir o Notificado em mora e buscar uma composição amigável antes das medidas judiciais.
+TEMPLATE_NOTIFICACAO = """Redija uma NOTIFICAÇÃO EXTRAJUDICIAL formal com o objetivo de constituir o Notificado em mora e buscar uma composição amigável antes das medidas judiciais.
 
 Informações base:
 - Notificante: [Nome/Qualificação]
-- Motivo: Inadimplemento de [Contrato/Parcela/Dívida] vencida em [Data], no valor de R$ [Valor].
+- Notificado: [Nome/Qualificação]
+- Motivo: Inadimplemento de dívida vencida no valor de R$ [Valor].
 
-Estruture o documento exatamente assim:
-1. Cabeçalho formal identificando Notificante e Notificado.
-2. Da Síntese dos Fatos (origem da obrigação e descumprimento).
-3. Da Fundamentação Legal (menção ao artigo 397 do Código Civil brasileiro sobre o inadimplemento da obrigação positiva e líquida).
-4. Do Requerimento e Prazo (Concessão do prazo preclusivo de 5 (cinco) dias úteis para regularização do débito ou apresentação de proposta).
-5. Das Advertências Finais (aviso expresso de que o silêncio ensejará a imediata propositura de Ação Judicial cabível).
+Estruture com Síntese dos Fatos, Fundamentação Legal (art. 397 do CC) e Requerimento com prazo preclusivo de 5 dias úteis. Gere o documento formal."""
 
-Gere o documento final formal."""
-
-# NOVO TEMPLATE: INTELIGÊNCIA DE TRIAGEM DE INTIMAÇÕES, DECISÕES E PRAZOS DO CPC
 TEMPLATE_INTIMACAO = """Analise minuciosamente o teor do texto da publicação do Diário Oficial ou da imagem da decisão anexada e elabore um PARECER DE TRIAGEM PROCESSUAL estruturado estritamente nos seguintes tópicos:
-
-1. **O COMANDO REAL (O 'PRETO NO BRANCO')**: Explique em linguagem simples, direta e sem juridiquês o que o magistrado ou tribunal efetivamente determinou (ex: concedeu liminar, extinguiu sem resolução do mérito, determinou emenda, etc.).
-2. **O PRAZO LEGAL PROCESSUAL (CPC)**: Identifique qual é o recurso ou a manifestação cabível contra esse despacho/decisão. Indique expressamente o prazo em dias úteis previsto no Código de Processo Civil (ex: 15 dias úteis para contestação, 15 dias úteis para apelação, 5 dias úteis para embargos de declaração, etc.).
-3. **DIRETRIZ ESTRATÉGICA RECOMENDADA**: Aponte quais as melhores condutas práticas que o advogado deve adotar para resguardar o direito do cliente em face dessa decisão específica (ex: interpor agravo devido ao risco de perecimento, recolher custas pendentes, etc.).
+1. O COMANDO REAL (O 'PRETO NO BRANCO')
+2. O PRAZO LEGAL PROCESSUAL (CPC)
+3. DIRETRIZ ESTRATÉGICA RECOMENDADA
 
 Aqui está o texto/documento para análise:
 [Cole aqui o texto da publicação ou apenas digite 'Analisar arquivo anexo']"""
+
+# --- NOVOS TEMPLATES SOLICITADOS NO PADRÃO DE MERCADO ---
+TEMPLATE_PROCURACAO = """Redija um instrumento de PROCURAÇÃO AD JUDICIA ET EXTRA de acordo com as normas vigentes do CPC brasileiro, contendo a seguinte estrutura e poderes:
+
+Outorgante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Eletrônico e Residencial]
+Outorgado: [Nome do Advogado, Inscrição na OAB/UF nº, Endereço do Escritório]
+
+Poderes: Cláusula 'Ad Judicia et Extra' para representação em qualquer Juízo, Instância ou Tribunal, ou fora deles.
+Poderes Especiais: Inclua os poderes específicos do artigo 105 do CPC (receber citação, confessar, reconhecer a procedência do pedido, transigir, desistir, renunciar ao direito, receber, dar quitação, firmar compromisso e substabelecer com ou sem reserva de poderes).
+
+Gere o documento formal completo pronto para preenchimento."""
+
+TEMPLATE_GRATUITA = """Redija uma DECLARAÇÃO DE HIPOSSUFICIÊNCIA ECONÔMICA (DECLARAÇÃO DE JUSTIÇA GRATUITA) formal nos termos do Artigo 98 e seguintes do Código de Processo Civil (CPC) e do Artigo 5º, inciso LXXIV da Constituição Federal.
+
+Declarante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Residencial]
+
+O documento deve atestar formalmente que o declarante não possui condições financeiras de arcar com as custas processuais e honorários advocatícios sem prejuízo do sustento próprio e de sua família, sob as penas da lei. Inclua campo para Data, Local e Assinatura. Gere o rascunho completo e formal."""
+
 
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
@@ -182,7 +216,7 @@ if st.sidebar.button("📄 Petição Inicial (Cobrança)"):
     st.session_state["prompt_input_value"] = TEMPLATE_INICIAL
     st.rerun()
 
-if st.sidebar.button("📝 Contrato de Prestação de Serviços"):
+if st.sidebar.button("📝 Contrato de Prestação"):
     st.session_state["prompt_input_value"] = TEMPLATE_CONTRATO
     st.rerun()
 
@@ -190,10 +224,18 @@ if st.sidebar.button("📧 Notificação Extrajudicial"):
     st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
     st.rerun()
 
-# NOVO BOTÃO DA ROTINA INTEGRADO
 if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
     st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
     st.rerun()
+
+if st.sidebar.button("⚖️ Procuração Ad Judicia"):
+    st.session_state["prompt_input_value"] = TEMPLATE_PROCURACAO
+    st.rerun()
+
+if st.sidebar.button("📜 Declaração Justiça Gratuita"):
+    st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
+    st.rerun()
+
 
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
@@ -212,8 +254,7 @@ with st.sidebar.expander("🔍 Pesquisa e Legislação"):
 with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
-
-# CARREGAMENTO DA CHAVE
+# CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
@@ -250,12 +291,18 @@ else:
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
+    # IMPRESSÃO DO CHAT HISTÓRICO COM DUPLO BOTÃO DE EXPORTAÇÃO (WORD + PDF)
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
             if message["role"] == "assistant" and "Não possuo autorização" not in message["content"]:
-                arquivo_docx = criar_arquivo_word(message["content"])
-                st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
+                col_dl1, col_dl2 = st.columns(2)
+                with col_dl1:
+                    arquivo_docx = criar_arquivo_word(message["content"])
+                    st.download_button(label="📥 Baixar no Word (.docx)", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_w_{i}")
+                with col_dl2:
+                    arquivo_pdf = criar_arquivo_pdf(message["content"])
+                    st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"documento_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 
     prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
     
@@ -305,7 +352,14 @@ else:
                             else:
                                 historico_ia.append(SystemMessage(content=msg["content"]))
                         resposta = llm_texto.invoke(historico_ia)
+                    
                     st.markdown(resposta.content)
                     st.session_state.messages.append({"role": "assistant", "content": resposta.content})
-                    arquivo_docx = criar_arquivo_word(resposta.content)
-                    st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_imediato_{len(st.session_state.messages)}")
+                    
+                    col_im1, col_dl2 = st.columns(2)
+                    with col_im1:
+                        arquivo_docx = criar_arquivo_word(resposta.content)
+                        st.download_button(label="📥 Baixar no Word (.docx)", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_w_imediato_{len(st.session_state.messages)}")
+                    with col_dl2:
+                        arquivo_pdf = criar_arquivo_pdf(resposta.content)
+                        st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name="documento_setubal_juris.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
