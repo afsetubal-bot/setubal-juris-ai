@@ -83,6 +83,28 @@ if st.session_state.historico_casos:
             key=f"dl_{nome_caso}"
         )
 
+# 🌐 NOVA SEÇÃO: CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
+
+with st.sidebar.expander("🏛️ Tribunais e Portais Oficiais"):
+    st.markdown("[• Portal do PJe - CNJ](https://cnj.jus.br)")
+    st.markdown("[• STF - Supremo Tribunal Federal](https://stf.jus.br)")
+    st.markdown("[• STJ - Superior Tribunal de Justiça](https://stj.jus.br)")
+    # Espaço para você adicionar o link do Tribunal do seu Estado:
+    # st.markdown("[• TJ - Seu Estado](COLE_O_LINK_AQUI)")
+
+with st.sidebar.expander("🔍 Pesquisa e Legislação"):
+    st.markdown("[• Planalto - Legislação Atualizada](http://planalto.gov.br)")
+    st.markdown("[• Jusbrasil - Jurisprudência](https://jusbrasil.com.br)")
+    st.markdown("[• Diário Oficial da União (DOU)](https://in.gov.br)")
+
+with st.sidebar.expander("🛠️ Ferramentas Práticas"):
+    st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
+    st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
+    st.markdown("[• Corregedoria Geral de Justiça](https://cnj.jus.br)")
+
+
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
