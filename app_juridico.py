@@ -164,6 +164,16 @@ Estruture o documento exatamente assim:
 
 Gere o documento final formal."""
 
+# NOVO TEMPLATE: INTELIGÊNCIA DE TRIAGEM DE INTIMAÇÕES, DECISÕES E PRAZOS DO CPC
+TEMPLATE_INTIMACAO = """Analise minuciosamente o teor do texto da publicação do Diário Oficial ou da imagem da decisão anexada e elabore um PARECER DE TRIAGEM PROCESSUAL estruturado estritamente nos seguintes tópicos:
+
+1. **O COMANDO REAL (O 'PRETO NO BRANCO')**: Explique em linguagem simples, direta e sem juridiquês o que o magistrado ou tribunal efetivamente determinou (ex: concedeu liminar, extinguiu sem resolução do mérito, determinou emenda, etc.).
+2. **O PRAZO LEGAL PROCESSUAL (CPC)**: Identifique qual é o recurso ou a manifestação cabível contra esse despacho/decisão. Indique expressamente o prazo em dias úteis previsto no Código de Processo Civil (ex: 15 dias úteis para contestação, 15 dias úteis para apelação, 5 dias úteis para embargos de declaração, etc.).
+3. **DIRETRIZ ESTRATÉGICA RECOMENDADA**: Aponte quais as melhores condutas práticas que o advogado deve adotar para resguardar o direito do cliente em face dessa decisão específica (ex: interpor agravo devido ao risco de perecimento, recolher custas pendentes, etc.).
+
+Aqui está o texto/documento para análise:
+[Cole aqui o texto da publicação ou apenas digite 'Analisar arquivo anexo']"""
+
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
@@ -178,6 +188,11 @@ if st.sidebar.button("📝 Contrato de Prestação de Serviços"):
 
 if st.sidebar.button("📧 Notificação Extrajudicial"):
     st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
+    st.rerun()
+
+# NOVO BOTÃO DA ROTINA INTEGRADO
+if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
+    st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
     st.rerun()
 
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
