@@ -187,7 +187,7 @@ TEMPLATE_INTIMACAO = """Analise minuciosamente o teor do texto da publicação d
 Aqui está o texto/documento para análise:
 [Cole aqui o texto da publicação ou apenas digite 'Analisar arquivo anexo']"""
 
-TEMPLATE_PROCURACAO = """Redija um instrumento de PROCURAÇÃO AD JUDICIA ET EXTRA de acordo com as normas vigentes do CPC brasileiro, contendo a seguinte estrutura e poderes:
+TEMPLATE_PROCURACAO = """Redija um instrumento de PROCURAÇÃO AD JUDICIAL ET EXTRA de acordo com as normas vigentes do CPC brasileiro, contendo a seguinte estrutura e poderes:
 
 Outorgante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Eletrônico e Residencial]
 Outorgado: [Nome do Advogado, Inscrição na OAB/UF nº, Endereço do Escritório]
