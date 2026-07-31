@@ -22,27 +22,28 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
 )
 
-# BLOCO ATUALIZADO: Oculta estritamente os ícones de desenvolvedor da direita
+# BLOCO UNIVERSAL REVISADO: Oculta a barra de utilitários da direita sem sumir com o botão do celular
 st.markdown("""
     <style>
     /* Oculta o botão Deploy */
     .stAppDeployButton {
         display: none !important;
     }
-    /* Oculta os botões extras do topo direito (GitHub, Estrela, etc.) */
-    [data-testid="stStatusWidget"] {
+    /* Oculta os ícones extras e menus da direita do cabeçalho */
+    div[data-testid="stToolbar"], 
+    .stActionButton, 
+    #MainMenu,
+    header[data-testid="stHeader"] div:nth-child(2) {
         display: none !important;
-    }
-    /* Oculta o menu de configurações do desenvolvedor */
-    #MainMenu {
         visibility: hidden !important;
     }
-    /* Oculta o rodapé padrão */
+    /* Esconde o rodapé */
     footer {
         visibility: hidden !important;
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 st.title("⚖️ Setubal Juris AI")
 st.subheader("Plataforma de Inteligência, Auditoria e Visão Jurídica")
