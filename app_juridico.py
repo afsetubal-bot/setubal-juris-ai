@@ -212,6 +212,7 @@ with st.sidebar.expander("🔍 Pesquisa e Legislação"):
 with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
+
 # CARREGAMENTO DA CHAVE
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
