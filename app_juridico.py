@@ -14,8 +14,15 @@ from docx import Document
 from io import BytesIO
 import base64
 
-# Configuração visual do topo da página (Limpeza de menus de desenvolvedor)
-st.set_page_config(page_title="Setubal Juris AI", page_icon="⚖️", layout="wide")
+# CONFIGURAÇÃO COM SUPORTE AUTOMÁTICO PARA EXPANDIR O MENU NO CELULAR
+st.set_page_config(
+    page_title="Setubal Juris AI", 
+    page_icon="⚖️", 
+    layout="wide", 
+    initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
+)
+
+# Esconder ferramentas de desenvolvimento do Streamlit no topo
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -32,6 +39,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "historico_casos" not in st.session_state:
     st.session_state.historico_casos = {}
+if "prompt_input_value" not in st.session_state:
+    st.session_state["prompt_input_value"] = ""
 
 def criar_arquivo_word(texto):
     doc = Document()
@@ -53,7 +62,7 @@ def exportar_historico_completo(mensagens):
         historico_texto += "-"*50 + "\n\n"
     return historico_texto
 
-# BARRA LATERAL (No celular, clique na setinha ">" no canto superior esquerdo para abrir)
+# BARRA LATERAL PRINCIPAL
 st.sidebar.header("🏛️ Painel Setubal Juris")
 st.sidebar.markdown("### 💾 Gestão da Sessão")
 
@@ -63,11 +72,13 @@ if st.sidebar.button("➕ Iniciar Novo Caso (Arquivar Atual)"):
         st.session_state.historico_casos[f"Caso Arquivado #{num_caso}"] = st.session_state.messages
         st.toast(f"Caso #{num_caso} arquivado!")
     st.session_state.messages = []
+    st.session_state["prompt_input_value"] = ""
     st.rerun()
 
 if st.sidebar.button("🗑️ Limpar Tudo (Zerar Memória)"):
     st.session_state.messages = []
     st.session_state.historico_casos = {}
+    st.session_state["prompt_input_value"] = ""
     st.toast("Todo o sistema de chat foi limpo com sucesso!")
     st.rerun()
 
@@ -82,17 +93,83 @@ if st.session_state.historico_casos:
             mime="text/plain", 
             key=f"dl_{nome_caso}"
         )
+# 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
+TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
 
-# 🌐 NOVA SEÇÃO: CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
+Redija uma PETIÇÃO INICIAL de AÇÃO DE COBRANÇA no rito comum do CPC, baseando-se nas seguintes informações básicas:
+- Autor: [Nome/Qualificação Completa]
+- Réu: [Nome/Qualificação Completa]
+- Fato: Inadimplemento de obrigação contratual líquida e certa.
+- Valor do Débito atualizado: R$ [Inserir Valor].
+
+Siga estritamente o padrão das melhores advocacias, estruturando a peça com:
+1. Endereçamento e Qualificação das partes.
+2. Dos Fatos (narrativa jurídica clara).
+3. Do Direito (fundamentação com os artigos 389 e seguintes do Código Civil, combinados com as normas do CPC).
+4. Dos Pedidos (citação do réu, procedência total da ação, condenação em custas e honorários advocatícios de sucumbência conforme artigo 85, § 2º do CPC, e interesse na audiência de conciliação).
+5. Dá-se à causa o valor de R$ [Valor].
+
+Gere a peça completa e formal."""
+
+TEMPLATE_CONTRATO = """Redija um CONTRATO DE PRESTAÇÃO DE SERVIÇOS profissional no padrão das grandes bancas de advocacia do país, estruturado com as seguintes cláusulas:
+
+- Contratante: [Nome/Qualificação]
+- Contratado: [Nome/Qualificação]
+- Objeto do Serviço: [Descrever o serviço de forma técnica]
+- Valor e Condições: [Inserir valor e datas de pagamento]
+
+O contrato deve conter de forma minuciosa:
+Cláusula 1ª - Do Objeto e Escopo.
+Cláusula 2ª - Das Obrigações do Contratante.
+Cláusula 3ª - Das Obrigações do Contratado.
+Cláusula 4ª - Do Preço e das Condições de Pagamento (incluindo multa e juros de mora por atraso).
+Cláusula 5ª - Da Rescisão e Cláusula Penal (multa rescisória profissional em caso de quebra).
+Cláusula 6ª - Da Confidencialidade e Sigilo das Informações (LGPD).
+Cláusula 7ª - Do Foro de Eleição para dirimir litígios.
+
+Gere o contrato com redação formal e pronto para assinatura."""
+
+TEMPLATE_NOTIFICACAO = """À Atenção de: [Nome do Notificado] / Endereço: [Inserir Endereço].
+
+Redija uma NOTIFICAÇÃO EXTRAJUDICIAL formal com o objetivo de constituir o Notificado em mora e buscar uma composição amigável antes das medidas judiciais.
+
+Informações base:
+- Notificante: [Nome/Qualificação]
+- Motivo: Inadimplemento de [Contrato/Parcela/Dívida] vencida em [Data], no valor de R$ [Valor].
+
+Estruture o documento exatamente assim:
+1. Cabeçalho formal identificando Notificante e Notificado.
+2. Da Síntese dos Fatos (origem da obrigação e descumprimento).
+3. Da Fundamentação Legal (menção ao artigo 397 do Código Civil brasileiro sobre o inadimplemento da obrigação positiva e líquida).
+4. Do Requerimento e Prazo (Concessão do prazo preclusivo de 5 (cinco) dias úteis para regularização do débito ou apresentação de proposta).
+5. Das Advertências Finais (aviso expresso de que o silêncio ensejará a imediata propositura de Ação Judicial cabível).
+
+Gere o documento final formal."""
+
+# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
+
+if st.sidebar.button("📄 Petição Inicial (Cobrança)"):
+    st.session_state["prompt_input_value"] = TEMPLATE_INICIAL
+    st.rerun()
+
+if st.sidebar.button("📝 Contrato de Prestação de Serviços"):
+    st.session_state["prompt_input_value"] = TEMPLATE_CONTRATO
+    st.rerun()
+
+if st.sidebar.button("📧 Notificação Extrajudicial"):
+    st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
+    st.rerun()
+
+# 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
 
-with st.sidebar.expander("🏛️ Tribunais e Portais Oficiais"):
+with st.sidebar.expander("🏛️ Portais Oficiais"):
     st.markdown("[• Portal do PJe - CNJ](https://cnj.jus.br)")
     st.markdown("[• STF - Supremo Tribunal Federal](https://stf.jus.br)")
     st.markdown("[• STJ - Superior Tribunal de Justiça](https://stj.jus.br)")
-    # Espaço para você adicionar o link do Tribunal do seu Estado:
-    # st.markdown("[• TJ - Seu Estado](COLE_O_LINK_AQUI)")
 
 with st.sidebar.expander("🔍 Pesquisa e Legislação"):
     st.markdown("[• Planalto - Legislação Atualizada](http://planalto.gov.br)")
@@ -102,9 +179,7 @@ with st.sidebar.expander("🔍 Pesquisa e Legislação"):
 with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
-    st.markdown("[• Corregedoria Geral de Justiça](https://cnj.jus.br)")
-
-
+# CARREGAMENTO DA CHAVE
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
     st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
@@ -148,7 +223,23 @@ else:
                 arquivo_docx = criar_arquivo_word(message["content"])
                 st.download_button(label="📥 Baixar no Word", data=arquivo_docx, file_name=f"documento_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_{i}")
 
-    if prompt := st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?"):
+    prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
+    
+    if st.session_state["prompt_input_value"]:
+        st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
+        prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
+        
+        col_btn1, col_btn2 = st.columns()
+        with col_btn1:
+            if st.button("🚀 Enviar para IA", type="primary"):
+                prompt = prompt_editado
+                st.session_state["prompt_input_value"] = ""
+        with col_btn2:
+            if st.button("❌ Cancelar Modelo"):
+                st.session_state["prompt_input_value"] = ""
+                st.rerun()
+
+    if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
