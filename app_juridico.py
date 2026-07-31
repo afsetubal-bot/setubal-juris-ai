@@ -22,20 +22,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Força a barra lateral a iniciar aberta no celular
 )
 
-# BLOCO UNIVERSAL REVISADO: Oculta a barra de utilitários da direita sem sumir com o botão do celular
+# BLOCO CIRÚRGICO: Remove os botões da direita preservando o botão de abrir o menu na esquerda
 st.markdown("""
     <style>
     /* Oculta o botão Deploy */
     .stAppDeployButton {
         display: none !important;
     }
-    /* Oculta os ícones extras e menus da direita do cabeçalho */
-    div[data-testid="stToolbar"], 
-    .stActionButton, 
-    #MainMenu,
-    header[data-testid="stHeader"] div:nth-child(2) {
+    /* Oculta os elementos específicos da extrema direita do topo */
+    button[data-testid="stHeaderActionButton"],
+    div[data-testid="stToolbar"],
+    .stActionButton,
+    #MainMenu {
         display: none !important;
         visibility: hidden !important;
+    }
+    /* Mantém o botão do menu lateral esquerdo visível e reposicionado se necessário */
+    button[data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
     }
     /* Esconde o rodapé */
     footer {
@@ -43,6 +48,7 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 
 st.title("⚖️ Setubal Juris AI")
