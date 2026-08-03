@@ -138,7 +138,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
@@ -203,7 +203,7 @@ O documento deve atestar formalmente que o declarante não possui condições fi
 
 TEMPLATE_ENCERRAMENTO = """Gere uma FOLHA DE ASSINATURAS E TERMO DE ENCERRAMENTO PADRÃO JURÍDICO para aposição em contratos ou acordos extrajudiciais.
 
-Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] assinando the presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
+Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] assinando o presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
 [Localidade - UF], [Data].
 CONTRATANTE / CONTRATADO / TESTEMUNHA 1 / TESTEMUNHA 2"""
 
@@ -216,47 +216,39 @@ TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo,
 
 [Digite ou cole o relato do cliente aqui]"""
 
-# 🔐 ANTECIPAÇÃO GLOBAL DA SEÇÃO DA LGPD NO MENU LATERAL
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔐 Segurança da Informação")
-termo_lgpd = st.sidebar.checkbox(
-    "Aceito os Termos da LGPD (Lei nº 13.709/18)",
-    help="Marque este termo para destravar as caixas de rascunhos, a barra de chat principal e os botões de modelos rápidos."
-)
-
-# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (CONTROLADO PELA LGPD)
+# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (Livres de travas locais)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
 
-if st.sidebar.button("📄 Petição Inicial (Cobrança)", disabled=not termo_lgpd):
+if st.sidebar.button("📄 Petição Inicial (Cobrança)"):
     st.session_state["prompt_input_value"] = TEMPLATE_INICIAL
     st.rerun()
 
-if st.sidebar.button("📝 Contrato de Prestação", disabled=not termo_lgpd):
+if st.sidebar.button("📝 Contrato de Prestação"):
     st.session_state["prompt_input_value"] = TEMPLATE_CONTRATO
     st.rerun()
 
-if st.sidebar.button("📧 Notificação Extrajudicial", disabled=not termo_lgpd):
+if st.sidebar.button("📧 Notificação Extrajudicial"):
     st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
     st.rerun()
 
-if st.sidebar.button("🔍 Analisar Decisão / Intimação", disabled=not termo_lgpd):
+if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
     st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
     st.rerun()
 
-if st.sidebar.button("⚖️ Procuração Ad Judicia", disabled=not termo_lgpd):
+if st.sidebar.button("⚖️ Procuração Ad Judicia"):
     st.session_state["prompt_input_value"] = TEMPLATE_PROCURACAO
     st.rerun()
 
-if st.sidebar.button("📜 Declaração Justiça Gratuita", disabled=not termo_lgpd):
+if st.sidebar.button("📜 Declaração Justiça Gratuita"):
     st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
     st.rerun()
 
-if st.sidebar.button("✒️ Termo de Encerramento", disabled=not termo_lgpd):
+if st.sidebar.button("✒️ Termo de Encerramento"):
     st.session_state["prompt_input_value"] = TEMPLATE_ENCERRAMENTO
     st.rerun()
 
-if st.sidebar.button("📝 Ficha de Atendimento", disabled=not termo_lgpd):
+if st.sidebar.button("📝 Ficha de Atendimento"):
     st.session_state["prompt_input_value"] = TEMPLATE_FICHA
     st.rerun()
 
@@ -278,7 +270,7 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
-# 📋 TABELA DE PRAZOS FREQUENTES DO CPC
+# 📋 LEMBRETES DE PRAZOS FIXOS DO CPC NO RODAPÉ DA LATERAL
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
 with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
@@ -343,14 +335,20 @@ else:
                     arquivo_pdf = criar_arquivo_pdf(message["content"])
                     st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"documento_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 
-    # FLUXO PRINCIPAL CONTROLADO CRITERIOSAMENTE PELA ANTECIPAÇÃO DA LGPD
+    # --- RETORNO DA TRAVA DE CONFORMIDADE LEGAL CENTRALIZADA NO MEIO DA TELA ---
+    st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
+    termo_lgpd = st.checkbox(
+        "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
+        "inserção dos documentos e dados pessoais anexados neste caso, ciente de que a plataforma opera sob "
+        "criptografia fim a fim e em estrito cumprimento às normas da Lei nº 13.709/18 (LGPD)."
+    )
+
     prompt = None
 
     if termo_lgpd:
-        # Se aceitar a LGPD na lateral, desenha a barra de digitação normal
+        # Se aceitar a LGPD no meio da tela, abre o chat e os rascunhos normalmente
         prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
         
-        # Gerenciamento da gaveta de edição de rascunhos de modelos rápidos
         if st.session_state["prompt_input_value"]:
             st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
             prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
@@ -365,10 +363,8 @@ else:
                     st.session_state["prompt_input_value"] = ""
                     st.rerun()
     else:
-        # Mensagem fixa e segura caso a OAB/LGPD não esteja aceita
-        st.warning("🔒 Por motivos de compliance e segurança da informação, marque a caixinha de consentimento da LGPD na barra lateral esquerda para liberar a digitação no chat e a edição de modelos rápidos.")
+        st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD centralizada acima para liberar a barra de digitação e os modelos rápidos selecionados.")
 
-    # EXECUÇÃO DO PROVIMENTO DE RESPOSTAS JURÍDICAS
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
