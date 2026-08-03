@@ -138,7 +138,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
@@ -187,7 +187,7 @@ TEMPLATE_INTIMACAO = """Analise minuciosamente o teor do texto da publicação d
 Aqui está o texto/documento para análise:
 [Cole aqui o texto da publicação ou apenas digite 'Analisar arquivo anexo']"""
 
-TEMPLATE_PROCURACAO = """Redija um instrumento de PROCURAÇÃO AD JUDICIAL ET EXTRA de acordo com as normas vigentes do CPC brasileiro, contendo a seguinte estrutura e poderes:
+TEMPLATE_PROCURACAO = """Redija um instrumento de PROCURAÇÃO AD JUDICIA ET EXTRA de acordo com as normas vigentes do CPC brasileiro, contendo a seguinte estrutura e poderes:
 
 Outorgante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Eletrônico e Residencial]
 Outorgado: [Nome do Advogado, Inscrição na OAB/UF nº, Endereço do Escritório]
@@ -201,29 +201,21 @@ Declarante: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, En
 
 O documento deve atestar formalmente que o declarante não possui condições financeiras de arcar com as custas processuais. Gere o rascunho completo."""
 
-# --- NOVO TEMPLATE AUTOMÁTICO DE CLÁUSULA DE ASSINATURAS E ENCERRAMENTO ---
 TEMPLATE_ENCERRAMENTO = """Gere uma FOLHA DE ASSINATURAS E TERMO DE ENCERRAMENTO PADRÃO JURÍDICO para aposição em contratos ou acordos extrajudiciais.
 
-Estruture o texto exatamente assim:
-Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] para dirimir quaisquer dúvidas decorrentes deste instrumento, assinando o presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
-
+Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] assinando o presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
 [Localidade - UF], [Data].
+CONTRATANTE / CONTRATADO / TESTEMUNHA 1 / TESTEMUNHA 2"""
 
-__________________________________
-CONTRATANTE: [Nome]
+TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo, elabore uma FICHA DE ATENDIMENTO E TRIAGEM JURÍDICA completa e profissional estruturada nos seguintes tópicos:
 
-__________________________________
-CONTRATADO: [Nome]
+1. **SÍNTESE DOS FATOS E CRONOLOGIA**: Organize os fatos narrados em uma ordem cronológica limpa, destacando datas, condutas, valores e o cerne do problema jurídico.
+2. **TESES JURÍDICAS E ENQUADRAMENTO**: Identifique quais as ações cabíveis, os fundamentos do direito material (Direito Civil, Consumidor, Trabalhista, etc.) e os artigos de lei aplicáveis a este caso.
+3. **CHECKLIST DE DOCUMENTOS ESSENCIAIS**: Liste de forma cirúrgica todos os documentos de prova que o advogado deve solicitar ao cliente para viabilizar o protocolo da petição (ex: contratos, extratos, prints de tela, comprovantes).
+4. **ANÁLISE DE VIABILIDADE E RISCOS**: Aponte os pontos fortes e os pontos fracos da demanda, destacando se há risco de prescrição, decadência ou condenação em honorários de sucumbência.
 
-__________________________________
-TESTEMUNHA 1:
-Nome:
-CPF:
-
-__________________________________
-TESTEMUNHA 2:
-Nome:
-CPF:"""
+Insira o relato ou resumo do caso do cliente aqui:
+[Digite ou cole o relato do cliente aqui]"""
 
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
@@ -253,10 +245,14 @@ if st.sidebar.button("📜 Declaração Justiça Gratuita"):
     st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
     st.rerun()
 
-# Inclusão do novo botão técnico de encerramento
 if st.sidebar.button("✒️ Termo de Encerramento"):
     st.session_state["prompt_input_value"] = TEMPLATE_ENCERRAMENTO
     st.rerun()
+
+if st.sidebar.button("📝 Ficha de Atendimento"):
+    st.session_state["prompt_input_value"] = TEMPLATE_FICHA
+    st.rerun()
+
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
@@ -275,6 +271,15 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
+# 📋 NOVO MENU COMPLEMENTAR: TABELA DE PRAZOS FREQUENTES DO CPC
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
+with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
+    st.markdown("**• Contestação / Réplica:** 15 dias úteis")
+    st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
+    st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
+    st.markdown("**• Embargos de Declaração:** 5 dias úteis")
+    st.markdown("**• Manifestação Documental:** 15 dias úteis")
 # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 if not groq_api_key:
@@ -304,7 +309,6 @@ else:
             tipo_mime_imagem = f"image/{'png' if name_extensao.endswith('.png') else 'jpeg'}"
             dados_imagem_base64 = base64.b64encode(arquivo_enviado.read()).decode("utf-8")
 
-    # UPGRADE: Inclusão de regras estritas de formatação forense (ABNT de tribunais)
     PROMPT_SISTEMA = (
         "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
@@ -402,6 +406,7 @@ else:
                     with col_dl2:
                         arquivo_pdf = criar_arquivo_pdf(resposta.content)
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name="documento_setubal_juris.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
+
 
 
 
