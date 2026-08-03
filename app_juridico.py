@@ -49,12 +49,15 @@ st.markdown("""
 st.title("⚖️ Setubal Juris AI")
 st.subheader("Plataforma de Inteligência, Auditoria e Visão Jurídica")
 
+# INICIALIZAÇÃO DE MEMÓRIA ESTÁVEL DE SESSÃO
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "historico_casos" not in st.session_state:
     st.session_state.historico_casos = {}
 if "prompt_input_value" not in st.session_state:
     st.session_state["prompt_input_value"] = ""
+if "lgpd_aceito" not in st.session_state:
+    st.session_state["lgpd_aceito"] = False
 
 def criar_arquivo_word(texto):
     doc = Document()
@@ -138,7 +141,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):",)
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
@@ -216,7 +219,7 @@ TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo,
 
 [Digite ou cole o relato do cliente aqui]"""
 
-# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (Livres de travas locais)
+# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (Salvando o clique com segurança)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
 
@@ -270,7 +273,7 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
-# 📋 LEMBRETES DE PRAZOS FIXOS DO CPC NO RODAPÉ DA LATERAL
+# 📋 TABELA DE PRAZOS FREQUENTES DO CPC
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
 with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
@@ -335,18 +338,26 @@ else:
                     arquivo_pdf = criar_arquivo_pdf(message["content"])
                     st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"documento_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 
-    # --- RETORNO DA TRAVA DE CONFORMIDADE LEGAL CENTRALIZADA NO MEIO DA TELA ---
+    # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
     st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
+    
+    # Salva o clique da caixinha de forma estável na memória do servidor para o chat não sumir
     termo_lgpd = st.checkbox(
         "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
         "inserção dos documentos e dados pessoais anexados neste caso, ciente de que a plataforma opera sob "
-        "criptografia fim a fim e em estrito cumprimento às normas da Lei nº 13.709/18 (LGPD)."
+        "criptografia fim a fim e em estrito cumprimento às normas da Lei nº 13.709/18 (LGPD).",
+        value=st.session_state["lgpd_aceito"]
     )
+    
+    # Atualiza o estado da memória se o usuário clicar
+    if termo_lgpd != st.session_state["lgpd_aceito"]:
+        st.session_state["lgpd_aceito"] = termo_lgpd
+        st.rerun()
 
     prompt = None
 
-    if termo_lgpd:
-        # Se aceitar a LGPD no meio da tela, abre o chat e os rascunhos normalmente
+    if st.session_state["lgpd_aceito"]:
+        # Se aceitar a LGPD, o chat de digitação e a caixa de rascunhos funcionam normalmente
         prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
         
         if st.session_state["prompt_input_value"]:
@@ -358,12 +369,13 @@ else:
                 if st.button("🚀 Enviar para IA", type="primary"):
                     prompt = prompt_editado
                     st.session_state["prompt_input_value"] = ""
+                    st.rerun()
             with col_btn2:
                 if st.button("❌ Cancelar Modelo"):
                     st.session_state["prompt_input_value"] = ""
                     st.rerun()
     else:
-        st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD centralizada acima para liberar a barra de digitação e os modelos rápidos selecionados.")
+        st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD centralizada acima para liberar a barra de digitação e os modelos rápidos selecionados na barra lateral.")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
