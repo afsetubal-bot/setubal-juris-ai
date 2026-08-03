@@ -335,16 +335,6 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
-# 📋 TABELA DE PRAZOS FREQUENTES DO CPC NO RODAPÉ DA BARRA LATERAL
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
-with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
-    st.markdown("**• Contestação / Réplica:** 15 dias úteis")
-    st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
-    st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
-    st.markdown("**• Embargos de Declaração:** 5 dias úteis")
-    st.markdown("**• Manifestação Documental:** 15 dias úteis")
-
 # 📋 LEMBRETES DE PRAZOS FIXOS DO CPC NO RODAPÉ DA LATERAL
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
