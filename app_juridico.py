@@ -121,7 +121,7 @@ if st.sidebar.button("🗑️ Limpar Tudo (Zerar Memória)"):
     st.session_state.messages = []
     st.session_state.historico_casos = {}
     st.session_state["prompt_input_value"] = ""
-    st.toast("Todo o sistema de chat foi limpo com sucesso!")
+    st.toast("Todo o sistema foi limpo com sucesso!")
     st.rerun()
 
 if st.session_state.historico_casos:
@@ -141,7 +141,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
@@ -154,6 +154,55 @@ def calcular_prazo_util(data_inicial, dias_uteis):
 
 data_fatal = calcular_prazo_util(data_intimacao, tipo_prazo)
 st.sidebar.info(f"📅 **Prazo Fatal Exato:** {data_fatal.strftime('%d/%m/%Y')} ({tipo_prazo} dias úteis)")
+
+# 🗮️ SIMULADOR DE VALOR DA CAUSA, RITO E HONORÁRIOS OAB SP 2026
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🗮️ Valor da Causa, Rito e OAB")
+with st.sidebar.expander("🧮 Simulação de Rito Processual"):
+    pedido_principal = st.number_input("Pedido Principal / Benefício (R$):", min_value=0.0, value=0.0, step=500.0)
+    pedido_acessorio = st.number_input("Pedidos Acessórios / Indenizações (R$):", min_value=0.0, value=0.0, step=500.0)
+    valor_causa = pedido_principal + pedido_acessorio
+    st.markdown(f"**Valor da Causa Projetado:** R$ {valor_causa:,.2f}")
+    
+    limite_jec = 60480.0 # Teto de 40 salários mínimos para 2026 (R$ 1.512 * 40)
+    if valor_causa == 0:
+        st.write("Insira os valores para triagem.")
+    elif valor_causa <= limite_jec:
+        st.success("🟢 Elegível para o Juizado Especial Cível (JEC).")
+    else:
+        st.error("🔴 Ultrapassou o teto do JEC. Distribuir em Vara Cível ordinária.")
+
+with st.sidebar.expander("💼 Honorários Mínimos OAB SP 2026"):
+    servico_oab = st.selectbox(
+        "Selecione o Serviço Jurídico:",
+        [
+            "Consulta jurídica convencional",
+            "Consulta c/ exame de documentos",
+            "Elaboração de notificação extrajudicial",
+            "Atuação em Juizado Especial (JEC)",
+            "Procedimento comum cível (Inicial/Defesa)",
+            "Ação de Alimentos (Revisional/Fixação)",
+            "Divórcio Consensual Judicial",
+            "Patrocínio de Reclamante Trabalhista"
+        ]
+    )
+    
+    if servico_oab == "Consulta jurídica convencional":
+        st.info("💰 **Valor Mínimo:** R$ 539,25\n\n*Referência: Item 1.1 da Tabela OAB SP 2026.*")
+    elif servico_oab == "Consulta c/ exame de documentos":
+        st.info("💰 **Valor Mínimo:** R$ 1.155,52\n\n*Referência: Item 1.1 'a' da Tabela OAB SP 2026.*")
+    elif servico_oab == "Elaboração de notificação extrajudicial":
+        st.info("💰 **Valor Mínimo:** R$ 868,96\n\n*Referência: Item 1.10 da Tabela OAB SP 2026.*")
+    elif servico_oab == "Atuação em Juizado Especial (JEC)":
+        st.info("💰 **Valor Mínimo:** R$ 1.390,33\n\n*Referência: Item 3.1 da Tabela OAB SP 2026. Percentual recomendado: 20%.*")
+    elif servico_oab == "Procedimento comum cível (Inicial/Defesa)":
+        st.info("💰 **Valor Mínimo:** R$ 6.256,51\n\n*Referência: Item 4.1 da Tabela OAB SP 2026. Percentual recomendado: 20%.*")
+    elif servico_oab == "Ação de Alimentos (Revisional/Fixação)":
+        st.info("💰 **Valor Mínimo:** R$ 2.606,88\n\n*Referência: Item 6.9 da Tabela OAB SP 2026. Equivalente também ao valor de 3 pensões.*")
+    elif servico_oab == "Divórcio Consensual Judicial":
+        st.info("💰 **Valor Mínimo:** R$ 7.820,64\n\n*Referência: Item 6.1 'a' da Tabela OAB SP 2026. Havendo bens, acrescer 6%.*")
+    elif servico_oab == "Patrocínio de Reclamante Trabalhista":
+        st.info("💰 **Valor Mínimo:** R$ 1.737,91\n\n*Referência: Item 8.1 da Tabela OAB SP 2026. Percentual recomendado: 20% a 30% sobre o êxito.*")
 # 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
 TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
 
@@ -219,7 +268,7 @@ TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo,
 
 [Digite ou cole o relato do cliente aqui]"""
 
-# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (Salvando o clique com segurança)
+# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (Salva o clique na sessão estável)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
 
@@ -273,7 +322,7 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
-# 📋 TABELA DE PRAZOS FREQUENTES DO CPC
+# 📋 LEMBRETES DE PRAZOS FIXOS DO CPC NO RODAPÉ DA LATERAL
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
 with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
@@ -325,7 +374,6 @@ else:
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
-    # IMPRESSÃO DO CHAT HISTÓRICO COM DUPLO BOTÃO DE EXPORTAÇÃO (WORD + PDF)
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -341,7 +389,6 @@ else:
     # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
     st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
     
-    # Salva o clique da caixinha de forma estável na memória do servidor para o chat não sumir
     termo_lgpd = st.checkbox(
         "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
         "inserção dos documentos e dados pessoais anexados neste caso, ciente de que a plataforma opera sob "
@@ -349,7 +396,6 @@ else:
         value=st.session_state["lgpd_aceito"]
     )
     
-    # Atualiza o estado da memória se o usuário clicar
     if termo_lgpd != st.session_state["lgpd_aceito"]:
         st.session_state["lgpd_aceito"] = termo_lgpd
         st.rerun()
@@ -357,7 +403,6 @@ else:
     prompt = None
 
     if st.session_state["lgpd_aceito"]:
-        # Se aceitar a LGPD, o chat de digitação e a caixa de rascunhos funcionam normalmente
         prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
         
         if st.session_state["prompt_input_value"]:
