@@ -259,16 +259,25 @@ Por estarem assim justos e contratados, as partes elegem o foro da comarca de [C
 [Localidade - UF], [Data].
 CONTRATANTE / CONTRATADO / TESTEMUNHA 1 / TESTEMUNHA 2"""
 
-TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo, elabore uma FICHA DE ATENDIMENTO E TRIAGEM JURÍDICA completa e profissional estruturada nos seguintes tópicos:
+# --- NOVO TEMPLATE: CONTRATO DE HONORÁRIOS E PROPOSTA COMERCIAL AUTOMÁTICA ---
+TEMPLATE_HONORARIOS = """Redija um CONTRATO DE PRESTAÇÃO DE SERVIÇOS JURÍDICOS E HONORÁRIOS ADVOCATÍCIOS profissional, baseado estritamente nos parâmetros da Tabela OAB SP de 2026 e nos dados fornecidos abaixo:
 
-1. **SÍNTESE DOS FATOS E CRONOLOGIA**: Organize os fatos narrados em uma ordem cronológica limpa, destacando datas, condutas, valores e o cerne do problema jurídico.
-2. **TESES JURÍDICAS E ENQUADRAMENTO**: Identifique quais as ações cabíveis, os fundamentos do direito material e os artigos de lei aplicáveis a este caso.
-3. **CHECKLIST DE DOCUMENTOS ESSENCIAIS**: Liste de forma cirúrgica todos os documentos de prova que o advogado deve solicitar ao cliente.
-4. **ANÁLISE DE VIABILIDADE E RISCOS**: Aponte os pontos fortes e os pontos fracos da demanda, destacando se há risco de prescrição ou honorários de sucumbência.
+Contratante: [Nome Completo do Cliente, Qualificação, CPF, RG e Endereço]
+Contratado: [Nome do Advogado ou Sociedade de Advogados, OAB/UF]
+Serviço Solicitado: [Descreva o serviço, ex: Ação Cível, Reclamação Trabalhista, Divórcio]
 
-[Digite ou cole o relato do cliente aqui]"""
+Estruture o contrato formal contendo as seguintes cláusulas obrigatórias:
+Cláusula 1ª - Do Objeto (patrocínio da demanda indicada e prestação de serviços técnicos em primeira instância).
+Cláusula 2ª - Das Obrigações do Contratado (cumprimento ético dos prazos e zelo profissional).
+Cláusula 3ª - Das Obrigações do Contratante (fornecer documentos de prova, arcar com custas processuais, taxas, xerox, diligências e emolumentos judiciais).
+Cláusula 4ª - Do Preço e Forma de Pagamento (Estipule o valor fixo inicial com base na OAB SP 2026 e adicione a cláusula Quota-Litis de 20% a 30% sobre o proveito econômico obtido no êxito da ação).
+Cláusula 5ª - Da Rescisão e Revogação (pagamento proporcional dos atos praticados em caso de quebra contratual ou retirada de procuração).
+Cláusula 6ª - Do Foro de Eleição para dirimir controvérsias contratuais.
 
-# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (Salva o clique na sessão estável)
+Gere a minuta contratual formal completa e pronta para colheita de assinaturas."""
+
+
+# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
 
@@ -304,6 +313,10 @@ if st.sidebar.button("📝 Ficha de Atendimento"):
     st.session_state["prompt_input_value"] = TEMPLATE_FICHA
     st.rerun()
 
+# Inclusão do novo botão técnico para fechamento de contratos de honorários com o cliente
+if st.sidebar.button("💼 Contrato de Honorários"):
+    st.session_state["prompt_input_value"] = TEMPLATE_HONORARIOS
+    st.rerun()
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
@@ -321,6 +334,16 @@ with st.sidebar.expander("🔍 Pesquisa e Legislação"):
 with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
+
+# 📋 TABELA DE PRAZOS FREQUENTES DO CPC NO RODAPÉ DA BARRA LATERAL
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
+with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
+    st.markdown("**• Contestação / Réplica:** 15 dias úteis")
+    st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
+    st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
+    st.markdown("**• Embargos de Declaração:** 5 dias úteis")
+    st.markdown("**• Manifestação Documental:** 15 dias úteis")
 
 # 📋 LEMBRETES DE PRAZOS FIXOS DO CPC NO RODAPÉ DA LATERAL
 st.sidebar.markdown("---")
@@ -365,7 +388,7 @@ else:
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
         "Você tem conhecimento pleno de toda a legislação brasileira. Fundamente suas respostas nos artigos vigentes.\n\n"
         "DIRETRIZ DE FORMATAÇÃO FORENSE OAB/ABNT:\n"
-        "Ao redigir peças processuais, contratos, procurações ou pareceres, estruture o texto com rigor técnico visual:\n"
+        "Ao redigir peças processuais, contratos, procurações ou pareceres, estruture o text com rigor técnico visual:\n"
         "- Utilize títulos em CAIXA ALTA e negrito para divisões de seções (ex: DOS FATOS, DO DIREITO).\n"
         "- Garanta parágrafos bem espaçados.\n"
         "- Citações de jurisprudências, ementas ou artigos longos devem vir em blocos isolados e destacados, "
