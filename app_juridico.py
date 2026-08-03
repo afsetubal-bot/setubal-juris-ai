@@ -141,7 +141,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):",)
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
