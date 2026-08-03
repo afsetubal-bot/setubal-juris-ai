@@ -476,7 +476,7 @@ else:
                                 historico_ia.append(HumanMessage(content=msg["content"]))
                             else:
                                 historico_ia.append(SystemMessage(content=msg["content"]))
-                        resposta = llm_texto.invoke(historico_ia)
+                        resposta = llm_texto.invoke(historico_ia) 
                     
                     st.markdown(resposta.content)
                     st.session_state.messages.append({"role": "assistant", "content": resposta.content})
