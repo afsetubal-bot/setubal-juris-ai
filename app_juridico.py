@@ -203,53 +203,60 @@ O documento deve atestar formalmente que o declarante não possui condições fi
 
 TEMPLATE_ENCERRAMENTO = """Gere uma FOLHA DE ASSINATURAS E TERMO DE ENCERRAMENTO PADRÃO JURÍDICO para aposição em contratos ou acordos extrajudiciais.
 
-Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] assinando o presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
+Por estarem assim justos e contratados, as partes elegem o foro da comarca de [Cidade/UF] assinando the presente documento em 02 (duas) vias de igual teor e forma, juntamente com 02 (duas) testemunhas instrumentárias abaixo qualificadas.
 [Localidade - UF], [Data].
 CONTRATANTE / CONTRATADO / TESTEMUNHA 1 / TESTEMUNHA 2"""
 
 TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo, elabore uma FICHA DE ATENDIMENTO E TRIAGEM JURÍDICA completa e profissional estruturada nos seguintes tópicos:
 
 1. **SÍNTESE DOS FATOS E CRONOLOGIA**: Organize os fatos narrados em uma ordem cronológica limpa, destacando datas, condutas, valores e o cerne do problema jurídico.
-2. **TESES JURÍDICAS E ENQUADRAMENTO**: Identifique quais as ações cabíveis, os fundamentos do direito material (Direito Civil, Consumidor, Trabalhista, etc.) e os artigos de lei aplicáveis a este caso.
-3. **CHECKLIST DE DOCUMENTOS ESSENCIAIS**: Liste de forma cirúrgica todos os documentos de prova que o advogado deve solicitar ao cliente para viabilizar o protocolo da petição (ex: contratos, extratos, prints de tela, comprovantes).
-4. **ANÁLISE DE VIABILIDADE E RISCOS**: Aponte os pontos fortes e os pontos fracos da demanda, destacando se há risco de prescrição, decadência ou condenação em honorários de sucumbência.
+2. **TESES JURÍDICAS E ENQUADRAMENTO**: Identifique quais as ações cabíveis, os fundamentos do direito material e os artigos de lei aplicáveis a este caso.
+3. **CHECKLIST DE DOCUMENTOS ESSENCIAIS**: Liste de forma cirúrgica todos os documentos de prova que o advogado deve solicitar ao cliente.
+4. **ANÁLISE DE VIABILIDADE E RISCOS**: Aponte os pontos fortes e os pontos fracos da demanda, destacando se há risco de prescrição ou honorários de sucumbência.
 
-Insira o relato ou resumo do caso do cliente aqui:
 [Digite ou cole o relato do cliente aqui]"""
 
-# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
+# 🔐 ANTECIPAÇÃO GLOBAL DA SEÇÃO DA LGPD NO MENU LATERAL
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🔐 Segurança da Informação")
+termo_lgpd = st.sidebar.checkbox(
+    "Aceito os Termos da LGPD (Lei nº 13.709/18)",
+    help="Marque este termo para destravar as caixas de rascunhos, a barra de chat principal e os botões de modelos rápidos."
+)
+
+# 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL (CONTROLADO PELA LGPD)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
 
-if st.sidebar.button("📄 Petição Inicial (Cobrança)"):
+if st.sidebar.button("📄 Petição Inicial (Cobrança)", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_INICIAL
     st.rerun()
 
-if st.sidebar.button("📝 Contrato de Prestação"):
+if st.sidebar.button("📝 Contrato de Prestação", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_CONTRATO
     st.rerun()
 
-if st.sidebar.button("📧 Notificação Extrajudicial"):
+if st.sidebar.button("📧 Notificação Extrajudicial", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
     st.rerun()
 
-if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
+if st.sidebar.button("🔍 Analisar Decisão / Intimação", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
     st.rerun()
 
-if st.sidebar.button("⚖️ Procuração Ad Judicia"):
+if st.sidebar.button("⚖️ Procuração Ad Judicia", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_PROCURACAO
     st.rerun()
 
-if st.sidebar.button("📜 Declaração Justiça Gratuita"):
+if st.sidebar.button("📜 Declaração Justiça Gratuita", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
     st.rerun()
 
-if st.sidebar.button("✒️ Termo de Encerramento"):
+if st.sidebar.button("✒️ Termo de Encerramento", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_ENCERRAMENTO
     st.rerun()
 
-if st.sidebar.button("📝 Ficha de Atendimento"):
+if st.sidebar.button("📝 Ficha de Atendimento", disabled=not termo_lgpd):
     st.session_state["prompt_input_value"] = TEMPLATE_FICHA
     st.rerun()
 
@@ -271,7 +278,7 @@ with st.sidebar.expander("🛠️ Ferramentas Práticas"):
     st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
     st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
 
-# 📋 NOVO MENU COMPLEMENTAR: TABELA DE PRAZOS FREQUENTES DO CPC
+# 📋 TABELA DE PRAZOS FREQUENTES DO CPC
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
 with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
@@ -323,6 +330,7 @@ else:
     if texto_contrato_atual:
         PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
 
+    # IMPRESSÃO DO CHAT HISTÓRICO COM DUPLO BOTÃO DE EXPORTAÇÃO (WORD + PDF)
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -335,18 +343,14 @@ else:
                     arquivo_pdf = criar_arquivo_pdf(message["content"])
                     st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"documento_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 
-    st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
-    termo_lgpd = st.checkbox(
-        "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
-        "inserção dos documentos e dados pessoais anexados neste caso, ciente de que a plataforma opera sob "
-        "criptografia fim a fim e em estrito cumprimento às normas da Lei nº 13.709/18 (LGPD)."
-    )
-
+    # FLUXO PRINCIPAL CONTROLADO CRITERIOSAMENTE PELA ANTECIPAÇÃO DA LGPD
     prompt = None
 
     if termo_lgpd:
+        # Se aceitar a LGPD na lateral, desenha a barra de digitação normal
         prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
         
+        # Gerenciamento da gaveta de edição de rascunhos de modelos rápidos
         if st.session_state["prompt_input_value"]:
             st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
             prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
@@ -361,8 +365,10 @@ else:
                     st.session_state["prompt_input_value"] = ""
                     st.rerun()
     else:
-        st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD acima para liberar a barra de digitação e a edição de modelos rápidos.")
+        # Mensagem fixa e segura caso a OAB/LGPD não esteja aceita
+        st.warning("🔒 Por motivos de compliance e segurança da informação, marque a caixinha de consentimento da LGPD na barra lateral esquerda para liberar a digitação no chat e a edição de modelos rápidos.")
 
+    # EXECUÇÃO DO PROVIMENTO DE RESPOSTAS JURÍDICAS
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -406,7 +412,3 @@ else:
                     with col_dl2:
                         arquivo_pdf = criar_arquivo_pdf(resposta.content)
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name="documento_setubal_juris.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
-
-
-
-
