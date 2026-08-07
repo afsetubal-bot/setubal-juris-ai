@@ -43,7 +43,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Ocultar utilitários e injetar folha de estilo para centralizar e diminuir a tela de login no celular/PC
+# BLINDAGEM CSS: Força o encolhimento e a centralização absoluta dos campos de texto na tela
 st.markdown("""
     <style>
     .stAppDeployButton { display: none !important; }
@@ -52,16 +52,25 @@ st.markdown("""
     button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
         display: flex !important; visibility: visible !important; opacity: 1 !important;
     }
-    /* Centralizador e limitador de largura para a caixa de autenticação */
-    div[data-testid="stVerticalBlock"] > div:has(div.stTabs) {
-        max-width: 450px !important;
-        margin: 0 auto !important;
-        padding-top: 20px;
-    }
-    div[data-testid="stMarkdownContainer"] > h1, div[data-testid="stMarkdownContainer"] > h3 {
+    
+    /* Centralizador Estrito para os Títulos Superiores */
+    .titulo-central {
         text-align: center !important;
-        max-width: 550px !important;
         margin: 0 auto !important;
+        padding-top: 40px;
+    }
+    
+    /* Bloco Mestre que encolhe os inputs para tamanho mobile (380px) e joga para o meio da tela */
+    .caixa-login-firmada {
+        max-width: 380px !important;
+        margin: 0 auto !important;
+        padding: 20px;
+        background-color: transparent;
+    }
+    
+    /* Garante que os inputs do Streamlit obedeçam ao limite máximo da caixa mestre */
+    .caixa-login-firmada div[data-testid="stWidgetLabel"] {
+        text-align: left !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -92,6 +101,7 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 if "dados_usuario" not in st.session_state:
     st.session_state["dados_usuario"] = {}
+
 def criar_arquivo_word(texto):
     doc = Document()
     texto_limpo = texto.replace("**", "").replace("###", "")
@@ -114,7 +124,7 @@ def criar_arquivo_pdf(texto):
     elementos = []
     linhas = texto.split("\n")
     for linha in linhas:
-        linha_limpa = linha.replace("**", "").replace("###", "").strip()
+        linha_limpa = float(linha.replace("**", "").replace("###", "").strip()) if False else linha.replace("**", "").replace("###", "").strip()
         if not linha_limpa: continue
         if linha_limpa.startswith(("DO ", "DOS ", "DA ", "DAS ", "EDENTAL ", "NOTIFICAÇÃO ", "PETIÇÃO ", "CONTRATO ", "DECLARAÇÃO ", "FICHA ")):
             elementos.append(Paragraph(linha_limpa, estilo_titulo))
@@ -134,12 +144,14 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE DE LOGIN CENTRALIZADA E REDENOMINADA
+# 🔒 INTERFACE DE LOGIN COMPACTA E CENTRALIZADA ABSOLUTA
 if st.session_state["usuario_logado"] is None:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.title("🏛️ Portal de Acesso - Setubal Juris AI")
-    # Novo subtítulo corporativo centralizado
-    st.subheader("Acesso Restrito a Advogados e Associados")
+    # Renderização estrutural dos títulos com centralização forçada
+    st.markdown('<div class="titulo-central"><h1>🏛️ Portal de Acesso - Setubal Juris AI</h1><h3>Acesso Restrito a Advogados e Associados</h3></div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Encapsula os elementos Streamlit dentro do contêiner HTML/CSS encolhido de 380px
+    st.markdown('<div class="caixa-login-firmada">', unsafe_allow_html=True)
     
     aba_login, aba_cadastro = st.tabs(["🔑 Realizar Login", "📝 Criar Nova Conta"])
     
@@ -158,7 +170,7 @@ if st.session_state["usuario_logado"] is None:
                     "status_assinatura": "ativo",
                     "consultas_gratuitas_usadas": 0
                 }
-                st.success("Autenticação de Administrador Concluída! Entrando...")
+                st.success("Autenticação concluída! Entrando...")
                 st.rerun()
                 
             elif supabase and email_login and senha_login:
@@ -166,22 +178,21 @@ if st.session_state["usuario_logado"] is None:
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
                     if hasattr(resposta, "data") and resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
-                        st.session_state["dados_usuario"] = resposta.data[0] if isinstance(resposta.data, list) else resposta.data
-                        st.success("Autenticação bem-sucedida! Entrando...")
+                        st.session_state["dados_usuario"] = resposta.data
+                        st.success("Autenticação concluída! Entrando...")
                         st.rerun()
                     else:
-                        st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
+                        st.error("Usuário ou senha incorretos.")
                 except Exception:
-                    st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
+                    st.error("Usuário ou senha incorretos.")
             else:
-                st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
+                st.error("Usuário ou senha incorretos.")
                 
     with aba_cadastro:
-        # Novo termo comercial: Teste Gratuito
-        st.markdown("Crie sua conta para ganhar **01 consulta jurídica de teste gratuito**.")
+        st.markdown("Crie sua conta para obter **01 consulta de teste gratuito**.")
         email_cad = st.text_input("Seu melhor E-mail:", key="email_c")
         senha_cad = st.text_input("Crie uma Senha:", type="password", key="senha_c")
-        if st.button("Cadastrar e Ganhar Teste Grátis"):
+        if st.button("Cadastrar e Ativar Conta"):
             if supabase and email_cad and senha_cad:
                 try:
                     novo_user = {
@@ -192,11 +203,13 @@ if st.session_state["usuario_logado"] is None:
                         "status_assinatura": "gratis"
                     }
                     supabase.table("assinaturas_usuarios").insert(novo_user).execute()
-                    st.success("Conta criada com sucesso! Faça o login na aba ao lado.")
+                    st.success("Conta criada! Faça login ao lado.")
                 except Exception:
-                    st.error("Este e-mail já está cadastrado ou a operação falhou.")
+                    st.error("E-mail já cadastrado ou falha operacional.")
             else:
-                st.warning("Preencha todos os campos para cadastrar.")
+                st.warning("Preencha todos os campos.")
+                
+    st.markdown('</div>', unsafe_allow_html=True) # Fecha a tag div da caixa-login-firmada com segurança
     st.stop()
 
 # --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
