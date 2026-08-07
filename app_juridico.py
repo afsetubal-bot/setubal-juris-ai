@@ -43,7 +43,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# BLINDAGEM VISUAL ABSOLUTA: Trava toda a interface de entrada em um bloco Slim de 350px centralizado no meio do site
+# BLINDAGEM VISUAL AVANÇADA: Reduz fontes, remove espaçamentos excessivos e fixa largura slim
 st.markdown("""
     <style>
     .stAppDeployButton { display: none !important; }
@@ -53,32 +53,53 @@ st.markdown("""
         display: flex !important; visibility: visible !important; opacity: 1 !important;
     }
     
-    /* Configuração Geral da Página de Entrada */
+    /* Força toda a interface de entrada a encolher e se alinhar verticalmente no meio */
     div.block-container {
         max-width: 450px !important;
         margin: 0 auto !important;
-        padding-top: 50px !important;
+        padding-top: 30px !important;
     }
     
-    /* Força os Títulos, Abas, Textos e Botões a encolherem para 350px e centralizarem na marra */
+    /* Configuração e redução cirúrgica das fontes dos títulos */
+    .titulo-central {
+        text-align: center !important;
+        margin: 0 auto !important;
+        padding-bottom: 5px !important;
+    }
+    .titulo-central h1 {
+        font-size: 24px !important; /* Diminuição drástica do título principal */
+        font-weight: bold !important;
+        line-height: 30px !important;
+        margin-bottom: 5px !important;
+    }
+    .titulo-central h3 {
+        font-size: 14px !important; /* Redução do subtítulo institucional */
+        font-weight: normal !important;
+        color: #555555 !important;
+        margin-top: 0px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Garante consistência simétrica de 350px para abas e inputs */
     div[data-testid="stVerticalBlock"] {
         max-width: 350px !important;
         margin: 0 auto !important;
-        text-align: center !important;
     }
-    
-    /* Alinha os rótulos de e-mail e senha para o canto esquerdo da caixinha compacta */
+    div[data-testid="stTextInput"] {
+        max-width: 350px !important;
+        margin: 0 auto !important;
+    }
     div[data-testid="stWidgetLabel"] {
         text-align: left !important;
     }
     
-    /* Força o botão a alinhar centralizado horizontalmente e ficar colado abaixo dos inputs */
+    /* Formatação elegante e 100% alinhada para o botão principal */
     div.stButton {
         text-align: center !important;
         margin-top: 15px !important;
     }
     div.stButton > button {
-        width: 100% !important; /* Faz o botão ocupar toda a largura da caixinha slim de forma elegante */
+        width: 100% !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -109,7 +130,6 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 if "dados_usuario" not in st.session_state:
     st.session_state["dados_usuario"] = {}
-
 def criar_arquivo_word(texto):
     doc = Document()
     texto_limpo = texto.replace("**", "").replace("###", "")
@@ -152,11 +172,10 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE DE LOGIN E CADASTRO NO PADRÃO ESTÉTICO COMPACTO
+# 🔒 RENDERIZAÇÃO DA INTERFACE DE ENTRADA COM FONTES LEVES
 if st.session_state["usuario_logado"] is None:
-    st.title("🏛️ Portal de Acesso - Setubal Juris AI")
-    st.write("Acesso Restrito a Advogados e Associados")
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Div de títulos com formatação reduzida nas tags h1 e h3
+    st.markdown('<div class="titulo-central"><h1>🏛️ Portal de Acesso - Setubal Juris AI</h1><h3>Acesso Restrito a Advogados e Associados</h3></div>', unsafe_allow_html=True)
     
     aba_login, aba_cadastro = st.tabs(["🔑 Realizar Login", "📝 Criar Nova Conta"])
     
@@ -164,7 +183,6 @@ if st.session_state["usuario_logado"] is None:
         email_login = st.text_input("E-mail Cadastrado:", key="email_l")
         senha_login = st.text_input("Senha de Acesso:", type="password", key="senha_l")
         
-        # O botão vermelho agora aparece posicionado exatamente embaixo dos inputs cíveis
         if st.button("Entrar no Sistema", type="primary", key="btn_login_exec"):
             secret_admin_email = st.secrets.get("ADMIN_EMAIL")
             secret_admin_senha = st.secrets.get("ADMIN_SENHA")
@@ -222,6 +240,7 @@ if st.session_state["usuario_logado"] is None:
                 st.warning("Preencha todos os campos.")
                 
     st.stop()
+
 
 # --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
 user_email = st.session_state["usuario_logado"]
