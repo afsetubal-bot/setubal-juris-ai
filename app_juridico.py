@@ -141,7 +141,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
 data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
+tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
 
 def calcular_prazo_util(data_inicial, dias_uteis):
     data_corrente = data_inicial
@@ -164,7 +164,7 @@ with st.sidebar.expander("🧮 Simulação de Rito Processual"):
     valor_causa = pedido_principal + pedido_acessorio
     st.markdown(f"**Valor da Causa Projetado:** R$ {valor_causa:,.2f}")
     
-    limite_jec = 60480.0 # Teto de 40 salários mínimos para 2026 (R$ 1.512 * 40)
+    limite_jec = 60480.0
     if valor_causa == 0:
         st.write("Insira os valores para triagem.")
     elif valor_causa <= limite_jec:
@@ -194,15 +194,15 @@ with st.sidebar.expander("💼 Honorários Mínimos OAB SP 2026"):
     elif servico_oab == "Elaboração de notificação extrajudicial":
         st.info("💰 **Valor Mínimo:** R$ 868,96\n\n*Referência: Item 1.10 da Tabela OAB SP 2026.*")
     elif servico_oab == "Atuação em Juizado Especial (JEC)":
-        st.info("💰 **Valor Mínimo:** R$ 1.390,33\n\n*Referência: Item 3.1 da Tabela OAB SP 2026. Percentual recomendado: 20%.*")
+        st.info("💰 **Valor Mínimo:** R$ 1.390,33\n\n*Referência: Item 3.1 da Tabela OAB SP 2026.*")
     elif servico_oab == "Procedimento comum cível (Inicial/Defesa)":
-        st.info("💰 **Valor Mínimo:** R$ 6.256,51\n\n*Referência: Item 4.1 da Tabela OAB SP 2026. Percentual recomendado: 20%.*")
+        st.info("💰 **Valor Mínimo:** R$ 6.256,51\n\n*Referência: Item 4.1 da Tabela OAB SP 2026.*")
     elif servico_oab == "Ação de Alimentos (Revisional/Fixação)":
-        st.info("💰 **Valor Mínimo:** R$ 2.606,88\n\n*Referência: Item 6.9 da Tabela OAB SP 2026. Equivalente também ao valor de 3 pensões.*")
+        st.info("💰 **Valor Mínimo:** R$ 2.606,88\n\n*Referência: Item 6.9 da Tabela OAB SP 2026.*")
     elif servico_oab == "Divórcio Consensual Judicial":
-        st.info("💰 **Valor Mínimo:** R$ 7.820,64\n\n*Referência: Item 6.1 'a' da Tabela OAB SP 2026. Havendo bens, acrescer 6%.*")
+        st.info("💰 **Valor Mínimo:** R$ 7.820,64\n\n*Referência: Item 6.1 'a' da Tabela OAB SP 2026.*")
     elif servico_oab == "Patrocínio de Reclamante Trabalhista":
-        st.info("💰 **Valor Mínimo:** R$ 1.737,91\n\n*Referência: Item 8.1 da Tabela OAB SP 2026. Percentual recomendado: 20% a 30% sobre o êxito.*")
+        st.info("💰 **Valor Mínimo:** R$ 1.737,91\n\n*Referência: Item 8.1 da Tabela OAB SP 2026.*")
 # 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
 TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
 
@@ -259,23 +259,22 @@ Por estarem assim justos e contratados, as partes elegem o foro da comarca de [C
 [Localidade - UF], [Data].
 CONTRATANTE / CONTRATADO / TESTEMUNHA 1 / TESTEMUNHA 2"""
 
-# --- NOVO TEMPLATE: CONTRATO DE HONORÁRIOS E PROPOSTA COMERCIAL AUTOMÁTICA ---
+TEMPLATE_FICHA = """Com base no relato do cliente ou no caso apresentado abaixo, elabore uma FICHA DE ATENDIMENTO E TRIAGEM JURÍDICA completa e profissional estruturada nos seguintes tópicos:
+
+1. **SÍNTESE DOS FATOS E CRONOLOGIA**: Organize os fatos narrados em uma ordem cronológica limpa, destacando datas, condutas, valores e o cerne do problema jurídico.
+2. **TESES JURÍDICAS E ENQUADRAMENTO**: Identifique quais as ações cabíveis, os fundamentos do direito material e os artigos de lei aplicáveis a este caso.
+3. **CHECKLIST DE DOCUMENTOS ESSENCIAIS**: Liste de forma cirúrgica todos os documentos de prova que o advogado deve solicitar ao cliente.
+4. **ANÁLISE DE VIABILIDADE E RISCOS**: Aponte os pontos fortes e os pontos fracos da demanda, destacando se há risco de prescrição ou honorários de sucumbência.
+
+[Digite ou cole o relato do cliente aqui]"""
+
 TEMPLATE_HONORARIOS = """Redija um CONTRATO DE PRESTAÇÃO DE SERVIÇOS JURÍDICOS E HONORÁRIOS ADVOCATÍCIOS profissional, baseado estritamente nos parâmetros da Tabela OAB SP de 2026 e nos dados fornecidos abaixo:
 
 Contratante: [Nome Completo do Cliente, Qualificação, CPF, RG e Endereço]
 Contratado: [Nome do Advogado ou Sociedade de Advogados, OAB/UF]
-Serviço Solicitado: [Descreva o serviço, ex: Ação Cível, Reclamação Trabalhista, Divórcio]
+Serviço Solicitado: [Descrever o serviço, ex: Ação Cível, Reclamação Trabalhista, Divórcio]
 
-Estruture o contrato formal contendo as seguintes cláusulas obrigatórias:
-Cláusula 1ª - Do Objeto (patrocínio da demanda indicada e prestação de serviços técnicos em primeira instância).
-Cláusula 2ª - Das Obrigações do Contratado (cumprimento ético dos prazos e zelo profissional).
-Cláusula 3ª - Das Obrigações do Contratante (fornecer documentos de prova, arcar com custas processuais, taxas, xerox, diligências e emolumentos judiciais).
-Cláusula 4ª - Do Preço e Forma de Pagamento (Estipule o valor fixo inicial com base na OAB SP 2026 e adicione a cláusula Quota-Litis de 20% a 30% sobre o proveito econômico obtido no êxito da ação).
-Cláusula 5ª - Da Rescisão e Revogação (pagamento proporcional dos atos praticados em caso de quebra contratual ou retirada de procuração).
-Cláusula 6ª - Do Foro de Eleição para dirimir controvérsias contratuais.
-
-Gere a minuta contratual formal completa e pronta para colheita de assinaturas."""
-
+Estruture o contrato formal contendo as seguintes cláusulas obrigatórias: Objeto, Obrigações, Preço e Forma de Pagamento (valor fixo + êxito de 20% a 30%), Rescisão e Foro de Eleição. Gere a minuta contratual formal completa."""
 
 # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
 st.sidebar.markdown("---")
@@ -313,10 +312,10 @@ if st.sidebar.button("📝 Ficha de Atendimento"):
     st.session_state["prompt_input_value"] = TEMPLATE_FICHA
     st.rerun()
 
-# Inclusão do novo botão técnico para fechamento de contratos de honorários com o cliente
 if st.sidebar.button("💼 Contrato de Honorários"):
     st.session_state["prompt_input_value"] = TEMPLATE_HONORARIOS
     st.rerun()
+
 # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
@@ -378,15 +377,16 @@ else:
         "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
         "Você tem conhecimento pleno de toda a legislação brasileira. Fundamente suas respostas nos artigos vigentes.\n\n"
         "DIRETRIZ DE FORMATAÇÃO FORENSE OAB/ABNT:\n"
-        "Ao redigir peças processuais, contratos, procurações ou pareceres, estruture o text com rigor técnico visual:\n"
+        "Ao redigir peças processuais, contratos, procurações ou pareceres, estruture o texto com rigor técnico visual:\n"
         "- Utilize títulos em CAIXA ALTA e negrito para divisões de seções (ex: DOS FATOS, DO DIREITO).\n"
         "- Garanta parágrafos bem espaçados.\n"
         "- Citações de jurisprudências, ementas ou artigos longos devem vir em blocos isolados e destacados, "
         "simulando o recuo padrão de 4cm exigido pela técnica forense de peticionamento.\n"
     )
     if texto_contrato_atual:
-        PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO EM PDF:\n{texto_contrato_atual}\n\n"
+        PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO IN PDF:\n{texto_contrato_atual}\n\n"
 
+    # IMPRESSÃO DO CHAT HISTÓRICO COM DUPLO BOTÃO DE EXPORTAÇÃO (WORD + PDF)
     for i, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -416,32 +416,43 @@ else:
     prompt = None
 
     if st.session_state["lgpd_aceito"]:
-        prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
-        
+        # Se houver um modelo ativo na fila, renderiza a caixa de rascunho ANTES do st.chat_input
         if st.session_state["prompt_input_value"]:
-            st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo:")
+            st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo e envie no botão:")
             prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
             
             col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
+                # ENGENHARIA CORRIGIDA: Força a injeção imediata na sessão do chat
                 if st.button("🚀 Enviar para IA", type="primary"):
-                    prompt = prompt_editado
+                    st.session_state.messages.append({"role": "user", "content": prompt_editado})
                     st.session_state["prompt_input_value"] = ""
                     st.rerun()
             with col_btn2:
                 if st.button("❌ Cancelar Modelo"):
                     st.session_state["prompt_input_value"] = ""
                     st.rerun()
+        else:
+            # Só exibe o st.chat_input se não houver um rascunho de modelo aberto, evitando limpezas de memória
+            prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
     else:
         st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD centralizada acima para liberar a barra de digitação e os modelos rápidos selecionados na barra lateral.")
 
+    # Se o usuário usou o chat_input comum, injeta na sessão normal
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
+        st.rerun()
+
+    # BLOCO DE PROCESSAMENTO E DISPARO DAS APIS (Só roda se houver uma nova mensagem não respondida)
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        ultimo_comando = st.session_state.messages[-1]["content"]
+        
+        # Exibe o texto do usuário de forma imediata na tela antes de rodar o spinner
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.markdown(ultimo_comando)
 
         palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
-        if any(palavra in prompt.lower() for palavra in palavras_bloqueadas):
+        if any(palavra in ultimo_comando.lower() for palavra in palavras_bloqueadas):
             resposta_recusa = (
                 "Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
                 "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal."
@@ -449,32 +460,27 @@ else:
             with st.chat_message("assistant"):
                 st.markdown(resposta_recusa)
             st.session_state.messages.append({"role": "assistant", "content": resposta_recusa})
+            st.rerun()
         else:
             with st.chat_message("assistant"):
                 with st.spinner("Setubal Juris AI processando..."):
                     if dados_imagem_base64:
                         conteudo_usuario = [
-                            {"type": "text", "text": prompt},
+                            {"type": "text", "text": ultimo_comando},
                             {"type": "image_url", "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}}
                         ]
                         historico_ia = [SystemMessage(content=PROMPT_SISTEMA), HumanMessage(content=conteudo_usuario)]
                         resposta = llm_visao.invoke(historico_ia)
                     else:
                         historico_ia = [SystemMessage(content=PROMPT_SISTEMA)]
-                        for msg in st.session_state.messages:
+                        for msg in st.session_state.messages[:-1]: # Adiciona o histórico anterior
                             if msg["role"] == "user":
                                 historico_ia.append(HumanMessage(content=msg["content"]))
                             else:
                                 historico_ia.append(SystemMessage(content=msg["content"]))
-                        resposta = llm_texto.invoke(historico_ia) 
+                        historico_ia.append(HumanMessage(content=ultimo_comando)) # Adiciona o comando atual
+                        resposta = llm_texto.invoke(historico_ia)
                     
                     st.markdown(resposta.content)
                     st.session_state.messages.append({"role": "assistant", "content": resposta.content})
-                    
-                    col_im1, col_dl2 = st.columns(2)
-                    with col_im1:
-                        arquivo_docx = criar_arquivo_word(resposta.content)
-                        st.download_button(label="📥 Baixar no Word (.docx)", data=arquivo_docx, file_name="documento_setubal_juris.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_w_imediato_{len(st.session_state.messages)}")
-                    with col_dl2:
-                        arquivo_pdf = criar_arquivo_pdf(resposta.content)
-                        st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name="documento_setubal_juris.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
+                    st.rerun()
