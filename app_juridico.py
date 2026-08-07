@@ -210,7 +210,7 @@ if st.session_state["usuario_logado"] is None:
                     st.error("Usuário ou senha incorretos.")
             else:
                 st.error("Usuário ou senha incorretos.")
-                
+               
     with aba_cadastro:
         st.markdown("Ganhe **01 consulta de teste gratuito** ao criar sua conta.")
         email_cad = st.text_input("Seu melhor E-mail:", key="email_c")
