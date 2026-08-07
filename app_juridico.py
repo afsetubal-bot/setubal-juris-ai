@@ -124,7 +124,7 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO
+# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO BLINDADA
 if st.session_state["usuario_logado"] is None:
     st.title("🏛️ Portal de Acesso - Setubal Juris AI")
     st.subheader("Controle de Autenticação Corporativa e Assinaturas")
@@ -136,14 +136,17 @@ if st.session_state["usuario_logado"] is None:
         senha_login = st.text_input("Senha de Acesso:", type="password", key="senha_l")
         if st.button("Entrar no Sistema", type="primary"):
             if supabase and email_login and senha_login:
-                resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
-                if resposta.data:
-                    # Salva os dados na sessão e força a atualização
-                    st.session_state["usuario_logado"] = email_login.strip()
-                    st.session_state["dados_usuario"] = resposta.data[0] # Pega o primeiro registro limpo
-                    st.success("Autenticação bem-sucedida! Entrando...")
-                    st.rerun()
-                else:
+                try:
+                    # Envolvido em try/except para capturar falhas de conexão ou tabelas vazias sem quebrar o site
+                    resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
+                    if resposta.data and len(resposta.data) > 0:
+                        st.session_state["usuario_logado"] = email_login.strip()
+                        st.session_state["dados_usuario"] = resposta.data[0]
+                        st.success("Autenticação bem-sucedida! Entrando...")
+                        st.rerun()
+                    else:
+                        st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
+                except Exception:
                     st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
             else:
                 st.warning("Preencha todos os campos corretamente.")
@@ -168,14 +171,16 @@ if st.session_state["usuario_logado"] is None:
                     st.error("Este e-mail já está cadastrado ou a operação falhou.")
             else:
                 st.warning("Preencha todos os campos para cadastrar.")
-    st.stop() # Força o travamento absoluto até que a pessoa faça o login com sucesso
+    st.stop()
 # --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
 user_email = st.session_state["usuario_logado"]
 user_info = st.session_state["dados_usuario"]
 
-# Garante a extração limpa das variáveis mesmo que o banco retorne em formato de lista
+# Tratamento para garantir a extração limpa mesmo se o banco retornar em lista ou dicionário
 if isinstance(user_info, list) and len(user_info) > 0:
     dados_reais = user_info[0]
+elif isinstance(user_info, list):
+    dados_reais = {}
 else:
     dados_reais = user_info
 
@@ -229,7 +234,7 @@ if not bloqueado:
     st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
     data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-    tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
+    tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
 
     def calcular_prazo_util(data_inicial, dias_uteis):
         data_corrente = data_inicial
@@ -252,7 +257,7 @@ if not bloqueado:
         valor_causa = pedido_principal + pedido_acessorio
         st.markdown(f"**Valor da Causa Projetado:** R$ {valor_causa:,.2f}")
         
-        limite_jec = 60480.0 # Teto de 40 salários mínimos para 2026
+        limite_jec = 60480.0 # Teto de 40 salários mínimos para 2026 (R$ 1.512 * 40)
         if valor_causa == 0:
             st.write("Insira os valores para triagem.")
         elif valor_causa <= limite_jec:
@@ -312,7 +317,7 @@ CONTRATANTE: [Nome/Qualificação]
 CONTRATADO: [Nome/Qualificação]
 
 DO OBJETO
-Cláusula 1ª. O presente instrumento tem por objeto a prestação de serviços técnicos jurídicos e consultivos, de forma dili-gente e profissional.
+Cláusula 1ª. O presente instrumento tem por objeto a prestação de serviços técnicos jurídicos e consultivos, de forma diligente e profissional.
 
 DO PREÇO E CONDIÇÕES
 Cláusula 2ª. Pelos serviços prestados, o Contratante pagará as quantias previamente estipuladas, sob pena de incidência imediata de encargos moratórios vigentes."""
@@ -410,7 +415,7 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
 
     if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
         st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
-        st.sidebar.session_state["nome_documento_atual"] = "parecer_de_triagem_de_intimacao"
+        st.session_state["nome_documento_atual"] = "parecer_de_triagem_de_intimacao"
         st.rerun()
 
     if st.sidebar.button("⚖️ Procuração Ad Judicia"):
@@ -464,8 +469,7 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
         st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
         st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
         st.markdown("**• Embargos de Declaração:** 5 dias úteis")
-        st.markdown("**• Manifestação Documental:** 15 dias úteis")
-    # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
+        st.ma    # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
     groq_api_key = st.secrets.get("GROQ_API_KEY")
     if not groq_api_key:
         st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
@@ -521,6 +525,7 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
                     with col_dl2:
                         arquivo_pdf = criar_arquivo_pdf(message["content"])
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"{nome_doc}_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
+kdown("**• Manifestação Documental:** 15 dias úteis")
         # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
         st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
         
@@ -561,7 +566,6 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
         if prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
             st.rerun()
-
         # BLOCO DE PROCESSAMENTO E DISPARO DAS APIS (Com Atualização de Saldo no Banco)
         if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
             ultimo_comando = st.session_state.messages[-1]["content"]
