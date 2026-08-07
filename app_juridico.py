@@ -124,7 +124,7 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO CORRIGIDA
+# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO ENGENHARIA MASTER
 if st.session_state["usuario_logado"] is None:
     st.title("🏛️ Portal de Acesso - Setubal Juris AI")
     st.subheader("Controle de Autenticação Corporativa e Assinaturas")
@@ -138,10 +138,9 @@ if st.session_state["usuario_logado"] is None:
             if supabase and email_login and senha_login:
                 try:
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
-                    # CORREÇÃO CRUCIAL: Avalia se a resposta veio em formato de lista preenchida
                     if hasattr(resposta, "data") and resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
-                        # Extrai o primeiro item da lista diretamente para evitar erros de leitura posteriores
+                        # EXTRAÇÃO ASSEGURADA: Captura a primeira linha de dados de forma isolada
                         st.session_state["dados_usuario"] = resposta.data[0]
                         st.success("Autenticação bem-sucedida! Entrando...")
                         st.rerun()
