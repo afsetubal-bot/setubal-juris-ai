@@ -546,3 +546,315 @@ else:
                         arquivo_pdf = criar_arquivo_pdf(resposta.content)
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"{nome_f_doc}.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
                     st.rerun()
+# --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
+user_email = st.session_state["usuario_logado"]
+user_info = st.session_state["dados_usuario"]
+
+# Definição das variáveis de controle extraídas do banco de dados
+nivel = user_info[0]["nivel_acesso"] if isinstance(user_info, list) else user_info.get("nivel_acesso", "usuario")
+consultas_usadas = user_info[0]["consultas_gratuitas_usadas"] if isinstance(user_info, list) else user_info.get("consultas_gratuitas_usadas", 0)
+status_ass = user_info[0]["status_assinatura"] if isinstance(user_info, list) else user_info.get("status_assinatura", "gratis")
+data_venc = user_info[0]["data_vencimento"] if isinstance(user_info, list) else user_info.get("data_vencimento", None)
+
+bloqueado = False
+
+# Se o usuário NÃO for administrador, passa pela régua de checagem do plano
+if nivel != "admin":
+    # Regra 1: Degustação da primeira consulta gratuita acabada
+    if status_ass == "gratis" and consultas_usadas >= 1:
+        st.error("🔒 Degustação Concluída! Você já utilizou sua 01 consulta gratuita.")
+        st.info("Para continuar utilizando o Setubal Juris AI por 30 dias ilimitados, realize o pagamento da assinatura mensal de R$ 50,00.")
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("💳 Ir para Pagamento (Liberar PIX)", type="primary"):
+            st.toast("Redirecionando para o Gateway de Pagamento...")
+        bloqueado = True
+        st.stop()
+        
+    # Regra 2: Assinatura Mensal expirada
+    elif status_ass == "vencido" or (data_venc and datetime.datetime.strptime(str(data_venc), "%Y-%m-%d").date() < datetime.date.today()):
+        st.error("🔒 Assinatura Mensal Expirada!")
+        st.info("O seu período de 30 dias de acesso venceu. Realize a renovação de R$ 50,00 para reativar suas ferramentas.")
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("💳 Renovar Assinatura (Gerar PIX)", type="primary"):
+            st.toast("Gerando QR Code de pagamento...")
+        bloqueado = True
+        st.stop()
+        
+    # Regra 3: Régua de Alerta de 5 dias antes de vencer
+    elif data_venc:
+        vencimento_date = datetime.datetime.strptime(str(data_venc), "%Y-%m-%d").date()
+        dias_restantes = (vencimento_date - datetime.date.today()).days
+        if 0 <= dias_restantes <= 5:
+            st.warning(f"⚠️ **Aviso de Renovação:** Sua assinatura mensal expira em {dias_restantes} dias ({vencimento_date.strftime('%d/%m/%Y')}). Regularize antecipadamente para não interromper seu fluxo de trabalho.")
+
+# Se o usuário passou pelas travas ou é Admin, o sistema carrega o cockpit lateral
+if not bloqueado:
+    st.sidebar.write(f"Conectado como: **{user_email}** ({nivel.upper()})")
+    if st.sidebar.button("🚪 Sair do Sistema"):
+        st.session_state["usuario_logado"] = None
+        st.session_state["dados_usuario"] = {}
+        st.session_state.messages = []
+        st.rerun()
+
+    # 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
+    TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
+PETIÇÃO INICIAL
+DOS FATOS / DO DIREITO / DOS PEDIDOS"""
+
+    TEMPLATE_CONTRATO = """CONTRATO DE PRESTAÇÃO DE SERVIÇOS PROFISSIONAIS
+CONTRATANTE / CONTRATADO / DO OBJETO / DO PREÇO"""
+
+    TEMPLATE_NOTIFICACAO = """NOTIFICAÇÃO EXTRAJUDICIAL
+À Atenção de: [Nome] / DOS FATOS / DO DIREITO / DO REQUERIMENTO"""
+
+    TEMPLATE_INTIMACAO = """PARECER DE TRIAGEM PROCESSUAL
+DO COMANDO REAL / DO PRAZO LEGAL PROCESSUAL / DIRETRIZ ESTRATÉGICA"""
+
+    TEMPLATE_PROCURACAO = """PROCURAÇÃO AD JUDICIA ET EXTRA
+OUTORGANTE / OUTORGADO / DOS PODERES EXTRAORDINÁRIOS DO ART. 105 CPC"""
+
+    TEMPLATE_GRATUITA = """DECLARAÇÃO DE HIPOSSUFICIÊNCIA ECONÔMICA
+DECLARANTE / DECLARAÇÃO FORMAL ART. 98 CPC E ART. 5º CONSTITUIÇÃO"""
+
+    TEMPLATE_ENCERRAMENTO = """TERMO DE ENCERRAMENTO CONTRATUAL
+FORO DE ELEIÇÃO / ASSINATURAS DAS PARTES E DUAS TESTEMUNHAS"""
+
+    TEMPLATE_FICHA = """FICHA DE ATENDIMENTO E TRIAGEM
+SÍNTESE DOS FATOS / TESES JURÍDICAS / CHECKLIST DE DOCUMENTOS ESSENCIAIS"""
+
+    TEMPLATE_HONORARIOS = """CONTRATO DE HONORÁRIOS ADVOCATÍCIOS
+PREÇO E FORMA DE PAGAMENTO BASEADOS NA OAB SP 2026 E CLÁUSULA QUOTA-LITIS"""
+    # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
+
+    if st.sidebar.button("📄 Petição Inicial (Cobrança)"):
+        st.session_state["prompt_input_value"] = TEMPLATE_INICIAL
+        st.session_state["nome_documento_atual"] = "peticao_inicial_cobranca"
+        st.rerun()
+
+    if st.sidebar.button("📝 Contrato de Prestação"):
+        st.session_state["prompt_input_value"] = TEMPLATE_CONTRATO
+        st.session_state["nome_documento_atual"] = "contrato_de_prestacao_de_servicos"
+        st.rerun()
+
+    if st.sidebar.button("📧 Notificação Extrajudicial"):
+        st.session_state["prompt_input_value"] = TEMPLATE_NOTIFICACAO
+        st.session_state["nome_documento_atual"] = "notificacao_extrajudicial"
+        st.rerun()
+
+    if st.sidebar.button("🔍 Analisar Decisão / Intimação"):
+        st.session_state["prompt_input_value"] = TEMPLATE_INTIMACAO
+        st.session_state["nome_documento_atual"] = "parecer_de_triagem_de_intimacao"
+        st.rerun()
+
+    if st.sidebar.button("⚖️ Procuração Ad Judicia"):
+        st.session_state["prompt_input_value"] = TEMPLATE_PROCURACAO
+        st.session_state["nome_documento_atual"] = "procuracao_ad_judicia"
+        st.rerun()
+
+    if st.sidebar.button("📜 Declaração Justiça Gratuita"):
+        st.session_state["prompt_input_value"] = TEMPLATE_GRATUITA
+        st.session_state["nome_documento_atual"] = "declaracao_de_justica_gratuita"
+        st.rerun()
+
+    if st.sidebar.button("✒️ Termo de Encerramento"):
+        st.session_state["prompt_input_value"] = TEMPLATE_ENCERRAMENTO
+        st.session_state["nome_documento_atual"] = "termo_de_encerramento"
+        st.rerun()
+
+    if st.sidebar.button("📝 Ficha de Atendimento"):
+        st.session_state["prompt_input_value"] = TEMPLATE_FICHA
+        st.session_state["nome_documento_atual"] = "ficha_de_atendimento_e_triagem"
+        st.rerun()
+
+    if st.sidebar.button("💼 Contrato de Honorários"):
+        st.session_state["prompt_input_value"] = TEMPLATE_HONORARIOS
+        st.session_state["nome_documento_atual"] = "contrato_de_honorarios_advocaticios"
+        st.rerun()
+
+    # 🌐 CENTRAL DE LINKS ÚTEIS DA ADVOCACIA
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🌐 Links Úteis da Rotina")
+
+    with st.sidebar.expander("🏛️ Portais Oficiais"):
+        st.markdown("[• Portal do PJe - CNJ](https://cnj.jus.br)")
+        st.markdown("[• STF - Supremo Tribunal Federal](https://stf.jus.br)")
+        st.markdown("[• STJ - Superior Tribunal de Justiça](https://stj.jus.br)")
+
+    with st.sidebar.expander("🔍 Pesquisa e Legislação"):
+        st.markdown("[• Planalto - Legislação Atualizada](http://planalto.gov.br)")
+        st.markdown("[• Jusbrasil - Jurisprudência](https://jusbrasil.com.br)")
+        st.markdown("[• Diário Oficial da União (DOU)](https://in.gov.br)")
+
+    with st.sidebar.expander("🛠️ Ferramentas Práticas"):
+        st.markdown("[• CNA - Cadastro de Advogados OAB](https://oab.org.br)")
+        st.markdown("[• Calculadora de Prazos Processuais](https://legalcloud.com.br)")
+
+    # 📋 LEMBRETES DE PRAZOS FIXOS DO CPC NO RODAPÉ DA LATERAL
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📋 Lembretes de Prazos (CPC)")
+    with st.sidebar.expander("⏱️ Prazos Fixos de Consulta"):
+        st.markdown("**• Contestação / Réplica:** 15 dias úteis")
+        st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
+        st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
+        st.markdown("**• Embargos de Declaração:** 5 dias úteis")
+        st.markdown("**• Manifestação Documental:** 15 dias úteis")
+    # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
+    groq_api_key = st.secrets.get("GROQ_API_KEY")
+    if not groq_api_key:
+        st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
+    else:
+        llm_texto = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, groq_api_key=groq_api_key)
+        llm_visao = ChatGroq(model="llama-3.2-11b-vision-preview", temperature=0.1, groq_api_key=groq_api_key)
+
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 📁 Analisar Documento ou Foto (Caso Atual)")
+        arquivo_enviado = st.sidebar.file_uploader("Insira um contrato em PDF ou Foto", type=["pdf", "png", "jpg", "jpeg"])
+
+        texto_contrato_atual = ""
+        dados_imagem_base64 = None
+        tipo_mime_imagem = ""
+
+        if arquivo_enviado is not None:
+            name_extensao = arquivo_enviado.name.lower()
+            if name_extensao.endswith(".pdf"):
+                st.sidebar.success("Documento PDF carregado!")
+                reader_contrato = PdfReader(arquivo_enviado)
+                for page in reader_contrato.pages:
+                    t = page.extract_text()
+                    if t: texto_contrato_atual += t + "\n"
+            elif name_extensao.endswith((".png", ".jpg", ".jpeg")):
+                st.sidebar.success("Foto/Imagem jurídica carregada!")
+                tipo_mime_imagem = f"image/{'png' if name_extensao.endswith('.png') else 'jpeg'}"
+                dados_imagem_base64 = base64.b64encode(arquivo_enviado.read()).decode("utf-8")
+
+        PROMPT_SISTEMA = (
+            "Você é o Setubal Juris AI, um assistente virtual e co-piloto jurídico sênior especialista no Direito brasileiro.\n"
+            "Sua função é auxiliar o usuário de forma extremamente formal, técnica e ética.\n"
+            "Você tem conhecimento pleno de toda a legislação brasileira. Fundamente suas respostas nos artigos vigentes.\n\n"
+            "DIRETRIZ DE FORMATAÇÃO FORENSE OAB/ABNT:\n"
+            "Ao redigir peças processuais, contratos, procurações ou pareceres, estruture o texto com rigor técnico visual:\n"
+            "- Utilize títulos em CAIXA ALTA e negrito para divisões de seções (ex: DOS FATOS, DO DIREITO).\n"
+            "- Garanta parágrafos bem espaçados.\n"
+            "- Citações de jurisprudências, ementas ou artigos longos devem vir em blocos isolados e destacados, "
+            "simulando o recuo padrão de 4cm exigido pela técnica forense de peticionamento.\n"
+        )
+        if texto_contrato_atual:
+            PROMPT_SISTEMA += f"\nDOCUMENTO DO CASO ATUAL ENVIADO IN PDF:\n{texto_contrato_atual}\n\n"
+
+        # IMPRESSÃO DO CHAT HISTÓRICO COM DOWNLOAD INTEGRADO NOMINAL
+        for i, message in enumerate(st.session_state.messages):
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+                if message["role"] == "assistant" and "Não possuo autorização" not in message["content"]:
+                    nome_doc = st.session_state.get("nome_documento_atual", f"documento_{i}")
+                    col_dl1, col_dl2 = st.columns(2)
+                    with col_dl1:
+                        arquivo_docx = criar_arquivo_word(message["content"])
+                        st.download_button(label="📥 Baixar no Word (.docx)", data=arquivo_docx, file_name=f"{nome_doc}_{i}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_w_{i}")
+                    with col_dl2:
+                        arquivo_pdf = criar_arquivo_pdf(message["content"])
+                        st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"{nome_doc}_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
+        # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
+        st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
+        
+        termo_lgpd = st.checkbox(
+            "Declaro que possuo autorização legal ou consentimento expresso do titular para o tratamento e "
+            "inserção dos documentos e dados pessoais anexados neste caso, ciente de que a plataforma opera sob "
+            "criptografia fim a fim e em estrito cumprimento às normas da Lei nº 13.709/18 (LGPD).",
+            value=st.session_state["lgpd_aceito"]
+        )
+        
+        if termo_lgpd != st.session_state["lgpd_aceito"]:
+            st.session_state["lgpd_aceito"] = termo_lgpd
+            st.rerun()
+
+        prompt = None
+
+        if st.session_state["lgpd_aceito"]:
+            if st.session_state["prompt_input_value"]:
+                st.info("📋 Modelo selecionado! Edite os campos entre colchetes [ ] ou digite suas instruções complementares abaixo e envie no botão:")
+                prompt_editado = st.text_area("Rascunho da Estrutura do Modelo:", value=st.session_state["prompt_input_value"], height=250)
+                
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button("🚀 Enviar para IA", type="primary"):
+                        st.session_state.messages.append({"role": "user", "content": prompt_editado})
+                        st.session_state["prompt_input_value"] = ""
+                        st.rerun()
+                with col_btn2:
+                    if st.button("❌ Cancelar Modelo"):
+                        st.session_state["prompt_input_value"] = ""
+                        st.session_state["nome_documento_atual"] = "documento_juridico"
+                        st.rerun()
+            else:
+                prompt = st.chat_input("Ex: Qual o prazo de contestação segundo o CPC?")
+        else:
+            st.warning("🔒 Por motivos de compliance e segurança, marque a caixinha de consentimento da LGPD acima para liberar a barra de digitação e os modelos rápidos selecionados na barra lateral.")
+
+        if prompt:
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.rerun()
+
+        # BLOCO DE PROCESSAMENTO E DISPARO DAS APIS (Com Atualização de Saldo no Banco)
+        if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+            ultimo_comando = st.session_state.messages[-1]["content"]
+            
+            with st.chat_message("user"):
+                st.markdown(ultimo_comando)
+
+            palavras_bloqueadas = ["receita", "bolo", "doce", "cozinha", "comida", "futebol", "piada", "viagem", "roteiro", "musica", "filme"]
+            if any(palavra in ultimo_comando.lower() for palavra in palavras_bloqueadas):
+                resposta_recusa = (
+                    "Sou o Setubal Juris AI, um assistente corporativo de uso exclusivo para a área jurídica. "
+                    "Não possuo autorização ou conhecimento programado para responder a consultas fora do escopo legal."
+                )
+                with st.chat_message("assistant"):
+                    st.markdown(resposta_recusa)
+                st.session_state.messages.append({"role": "assistant", "content": resposta_recusa})
+                st.rerun()
+            else:
+                with st.chat_message("assistant"):
+                    with st.spinner("Setubal Juris AI processando..."):
+                        if dados_imagem_base64:
+                            conteudo_usuario = [
+                                {"type": "text", "text": ultimo_comando},
+                                {"type": "image_url", "image_url": {"url": f"data:{tipo_mime_imagem};base64,{dados_imagem_base64}"}}
+                            ]
+                            historico_ia = [SystemMessage(content=PROMPT_SISTEMA), HumanMessage(content=conteudo_usuario)]
+                            resposta = llm_visao.invoke(historico_ia)
+                        else:
+                            historico_ia = [SystemMessage(content=PROMPT_SISTEMA)]
+                            for msg in st.session_state.messages[:-1]:
+                                if msg["role"] == "user":
+                                    historico_ia.append(HumanMessage(content=msg["content"]))
+                                else:
+                                    historico_ia.append(SystemMessage(content=msg["content"]))
+                            historico_ia.append(HumanMessage(content=ultimo_comando))
+                            resposta = llm_texto.invoke(historico_ia)
+                        
+                        st.markdown(resposta.content)
+                        st.session_state.messages.append({"role": "assistant", "content": resposta.content})
+                        
+                        # CONTROLE EXCLUSIVO DE SALDO DA DEGUSTAÇÃO: Se for usuário grátis, atualiza no Supabase
+                        if supabase and nivel != "admin" and status_ass == "gratis":
+                            novo_saldo = int(consultas_usadas) + 1
+                            try:
+                                supabase.table("assinaturas_usuarios").update({"consultas_gratuitas_usadas": novo_saldo}).eq("email", user_email).execute()
+                                if isinstance(st.session_state["dados_usuario"], list):
+                                    st.session_state["dados_usuario"][0]["consultas_gratuitas_usadas"] = novo_saldo
+                                else:
+                                    st.session_state["dados_usuario"]["consultas_gratuitas_usadas"] = novo_saldo
+                            except Exception:
+                                pass
+                        
+                        nome_f_doc = st.session_state.get("nome_documento_atual", "documento_setubal_juris")
+                        col_im1, col_dl2 = st.columns(2)
+                        with col_im1:
+                            arquivo_docx = criar_arquivo_word(resposta.content)
+                            st.download_button(label="📥 Baixar no Word (.docx)", data=arquivo_docx, file_name=f"{nome_f_doc}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"btn_w_imediato_{len(st.session_state.messages)}")
+                        with col_dl2:
+                            arquivo_pdf = criar_arquivo_pdf(resposta.content)
+                            st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"{nome_f_doc}.pdf", mime="application/pdf", key=f"btn_p_imediato_{len(st.session_state.messages)}")
+                        st.rerun()
