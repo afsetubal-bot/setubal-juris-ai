@@ -137,7 +137,6 @@ if st.session_state["usuario_logado"] is None:
         if st.button("Entrar no Sistema", type="primary"):
             if supabase and email_login and senha_login:
                 try:
-                    # Envolvido em try/except para capturar falhas de conexão ou tabelas vazias sem quebrar o site
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
                     if resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
@@ -176,11 +175,9 @@ if st.session_state["usuario_logado"] is None:
 user_email = st.session_state["usuario_logado"]
 user_info = st.session_state["dados_usuario"]
 
-# Tratamento para garantir a extração limpa mesmo se o banco retornar em lista ou dicionário
+# Garante a extração limpa das variáveis mesmo se o banco retornar em formato de lista
 if isinstance(user_info, list) and len(user_info) > 0:
     dados_reais = user_info[0]
-elif isinstance(user_info, list):
-    dados_reais = {}
 else:
     dados_reais = user_info
 
@@ -219,7 +216,6 @@ if nivel != "admin":
         dias_restantes = (vencimento_date - datetime.date.today()).days
         if 0 <= dias_restantes <= 5:
             st.warning(f"⚠️ **Aviso de Renovação:** Sua assinatura mensal expira em {dias_restantes} dias ({vencimento_date.strftime('%d/%m/%Y')}). Regularize antecipadamente para não interromper seu fluxo de trabalho.")
-
 # Se o usuário passou pelas travas ou é Admin, o sistema carrega o cockpit lateral
 if not bloqueado:
     st.sidebar.write(f"Conectado como: **{user_email}** ({nivel.upper()})")
@@ -234,7 +230,7 @@ if not bloqueado:
     st.sidebar.markdown("### 📊 Calculadora de Prazos (Dias Úteis)")
 
     data_intimacao = st.sidebar.date_input("Data da Intimação / Publicação:", datetime.date.today())
-    tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15])
+    tipo_prazo = st.sidebar.selectbox("Tipo de Prazo (CPC):", [5, 10, 15, 30])
 
     def calcular_prazo_util(data_inicial, dias_uteis):
         data_corrente = data_inicial
@@ -248,7 +244,7 @@ if not bloqueado:
     data_fatal = calcular_prazo_util(data_intimacao, tipo_prazo)
     st.sidebar.info(f"📅 **Prazo Fatal Exato:** {data_fatal.strftime('%d/%m/%Y')} ({tipo_prazo} dias úteis)")
 
-    # 🗮️ SIMULADOR DE VALOR DA CAUSA, RITO E HONORÁRIOS OAB SP 2026
+    # 🗮️ SIMULADOR DE VALOR DA CAUSA E RITO PROCESSUAL
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🗮️ Valor da Causa, Rito e OAB")
     with st.sidebar.expander("🧮 Simulação de Rito Processual"):
@@ -264,8 +260,7 @@ if not bloqueado:
             st.success("🟢 Elegível para o Juizado Especial Cível (JEC).")
         else:
             st.error("🔴 Ultrapassou o teto do JEC. Distribuir em Vara Cível ordinária.")
-
-    with st.sidebar.expander("💼 Honorários Mínimos OAB SP 2026"):
+    with st.sidebar.expander("💼 Honorários Mínimos OAB SP"):
         servico_oab = st.selectbox(
             "Selecione o Serviço Jurídico:",
             [
@@ -281,119 +276,51 @@ if not bloqueado:
         )
         
         if servico_oab == "Consulta jurídica convencional":
-            st.info("💰 **Valor Mínimo:** R$ 539,25\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 539,25\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Consulta c/ exame de documentos":
-            st.info("💰 **Valor Mínimo:** R$ 1.155,52\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 1.155,52\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Elaboração de notificação extrajudicial":
-            st.info("💰 **Valor Mínimo:** R$ 868,96\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 868,96\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Atuação em Juizado Especial (JEC)":
-            st.info("💰 **Valor Mínimo:** R$ 1.390,33\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 1.390,33\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Procedimento comum cível (Inicial/Defesa)":
-            st.info("💰 **Valor Mínimo:** R$ 6.256,51\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 6.256,51\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Ação de Alimentos (Revisional/Fixação)":
-            st.info("💰 **Valor Mínimo:** R$ 2.606,88\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 2.606,88\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Divórcio Consensual Judicial":
-            st.info("💰 **Valor Mínimo:** R$ 7.820,64\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 7.820,64\n\n*Referência: Tabela OAB SP.*")
         elif servico_oab == "Patrocínio de Reclamante Trabalhista":
-            st.info("💰 **Valor Mínimo:** R$ 1.737,91\n\n*Referência: Tabela OAB SP 2026.*")
+            st.info("💰 **Valor Mínimo:** R$ 1.737,91\n\n*Referência: Tabela OAB SP.*")
+
     # 📋 TEXTOS DOS TEMPLATES NO PADRÃO TÉCNICO DE ADVOCACIAS
     TEMPLATE_INICIAL = """Excelentíssimo Senhor Doutor Juiz de Direito da __ Vara Cível da Comarca de __.
 
 PETIÇÃO INICIAL
-
-DOS FATOS
-O Autor vem, por meio de seu advogado, propor a presente Ação de Cobrança, tendo em vista o inadimplemento de obrigação contratual líquida e certa pelo Réu, de forma injustificada.
-
-DO DIREITO
-A inadimplência do devedor é flagrante e atrai a aplicação imperiosa das sanções civis do ordenamento:
-> "O inadimplemento da obrigação, positiva e líquida, no seu termo, constitui de pleno direito em mora o devedor." (Artigo 397 do Código Civil brasileiro)
-
-DOS PEDIDOS
-Diante de todo o exposto, requer-se a total procedência da ação, com a regular citação do Réu para adimplir o débito atualizado ou apresentar defesa, bem como sua condenação em custas e honorários de sucumbência."""
+DOS FATOS / DO DIREITO / DOS PEDIDOS"""
 
     TEMPLATE_CONTRATO = """CONTRATO DE PRESTAÇÃO DE SERVIÇOS PROFISSIONAIS
-
-CONTRATANTE: [Nome/Qualificação]
-CONTRATADO: [Nome/Qualificação]
-
-DO OBJETO
-Cláusula 1ª. O presente instrumento tem por objeto a prestação de serviços técnicos jurídicos e consultivos, de forma diligente e profissional.
-
-DO PREÇO E CONDIÇÕES
-Cláusula 2ª. Pelos serviços prestados, o Contratante pagará as quantias previamente estipuladas, sob pena de incidência imediata de encargos moratórios vigentes."""
+CONTRATANTE / CONTRATADO / DO OBJETO / DO PREÇO"""
 
     TEMPLATE_NOTIFICACAO = """NOTIFICAÇÃO EXTRAJUDICIAL
-
-À Atenção de: [Nome do Notificado]
-
-DOS FATOS
-O Notificante vem, por meio desta, notificá-lo formalmente acerca do inadimplemento de obrigação e dívida vencida e não paga até a presente data.
-
-DO DIREITO
-Fundamenta-se a presente medida na imediata constituição em mora do devedor, conforme preceitua a legislação pátria:
-> "O devedor em mora responde pela impossibilidade da prestação, ainda que superveniente, salvo se provar que a mora não lhe foi imputável." (Artigo 397 do Código Civil)
-
-DO REQUERIMENTO
-Diante do exposto, requer-se a total regularização e quitação do débito pendente no prazo preclusivo de 5 (cinco) dias úteis, contados do recebimento desta."""
+À Atenção de: [Nome] / DOS FATOS / DO DIREITO / DO REQUERIMENTO"""
 
     TEMPLATE_INTIMACAO = """PARECER DE TRIAGEM PROCESSUAL
-
-DO COMANDO REAL
-Após análise minuciosa da publicação do Diário Oficial anexada, constatou-se que o magistrado determinou ato processual urgente a ser cumprido de forma imediata pelas partes.
-
-DO PRAZO LEGAL PROCESSUAL
-Nos termos do Código de Processo Civil (CPC), o ato processual indicado atrai prazo peremptório e preclusivo aplicável, computado em dias úteis.
-
-DIRETRIZ ESTRATÉGICA RECOMENDADA
-Recomenda-se a imediata compilação dos documentos e manifestação técnica cabível para resguardar os interesses do cliente."""
+DO COMANDO REAL / DO PRAZO LEGAL PROCESSUAL / DIRETRIZ ESTRATÉGICA"""
 
     TEMPLATE_PROCURACAO = """PROCURAÇÃO AD JUDICIA ET EXTRA
-
-OUTORGANTE: [Nome Completo, Nacionalidade, Estado Civil, Profissão, RG, CPF, Endereço Eletrônico e Residencial]
-OUTORGADO: [Nome do Advogado, Inscrição na OAB/UF nº, Endereço do Escritório]
-
-DOS PODERES
-Por este instrumento, o Outorgante concede ao Outorgado os poderes da cláusula 'Ad Judicia et Extra' para representação ampla em qualquer Juízo, Instância ou Tribunal, bem como os poderes especiais previstos na legislação:
-> "O procurador necessita de poderes especiais para receber citação, confessar, reconhecer a procedência do pedido, transigir, desistir, renunciar ao direito sobre o qual se funda a ação, receber, dar quitação, firmar compromisso e firmar declaração de hipossuficiência econômica." (Artigo 105 do Código de Processo Civil)"""
+OUTORGANTE / OUTORGADO / DOS PODERES EXTRAORDINÁRIOS DO ART. 105 CPC"""
 
     TEMPLATE_GRATUITA = """DECLARAÇÃO DE HIPOSSUFICIÊNCIA ECONÔMICA
-
-DECLARANTE: [Nome Completo/Qualificação]
-
-DECLARAÇÃO
-O Declarante atesta, sob as penas da lei e para os devidos fins de direito, que não possui condições financeiras de arcar com as custas processuais e honorários sem prejuízo de seu próprio sustento:
-> "A pessoa natural ou jurídica, brasileira ou estrangeira, com insuficiência de recursos para pagar as custas, as despesas processuais e os honorários advocatícios tem direito à gratuidade da justiça, na forma da lei." (Artigo 98 do Código de Processo Civil)"""
+DECLARANTE / DECLARAÇÃO FORMAL ART. 98 CPC E ART. 5º CONSTITUIÇÃO"""
 
     TEMPLATE_ENCERRAMENTO = """TERMO DE ENCERRAMENTO CONTRATUAL
-
-Por estarem assim justos e contratados, as partes elegem o foro da comarca estipulada para dirimir eventuais dúvidas, assinando o presente documento em duas vias de igual teor e forma, juntamente com duas testemunhas abaixo qualificadas.
-
-CONTRATANTE: ___________________________
-CONTRATADO: ___________________________
-
-TESTEMUNHA 1: _________________________
-TESTEMUNHA 2: _________________________"""
+FORO DE ELEIÇÃO / ASSINATURAS DAS PARTES E DUAS TESTEMUNHAS"""
 
     TEMPLATE_FICHA = """FICHA DE ATENDIMENTO E TRIAGEM
-
-SÍNTESE DOS FATOS E CRONOLOGIA
-Abertura de atendimento inicial contendo o relato fático unificado do cliente, listando datas de ocorrência, condutas, partes e valores envolvidos.
-
-TESES JURÍDICAS E ENQUADRAMENTO
-Identificação preliminar de viabilidade do direito material invocado e indicação das ações judiciais ou medidas administrativas cabíveis.
-
-CHECKLIST DE DOCUMENTOS ESSENCIAIS
-Relação cirúrgica de documentos probatórios necessários para ajuizamento seguro da demanda."""
+SÍNTESE DOS FATOS / TESES JURÍDICAS / CHECKLIST DE DOCUMENTOS ESSENCIAIS"""
 
     TEMPLATE_HONORARIOS = """CONTRATO DE HONORÁRIOS ADVOCATÍCIOS
-
-CONTRATANTE: [Nome Completo do Cliente, Qualificação, CPF, RG e Endereço]
-CONTRATADO: [Nome do Advogado ou Sociedade de Advogados, OAB/UF]
-
-DO PREÇO E FORMA DE PAGAMENTO
-Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-se os honorários contratuais mínimos de acordo com os parâmetros vigentes da OAB SP, adicionando-se percentual incidente sobre o êxito bruto.
-> "A decisão judicial que fixar honorários advocatícios e o contrato escrito que os estipular são títulos executivos e constituem crédito privilegiado na falência, concordata, concurso de credores, liquidação extrajudicial e inventário." (Artigo 24 da Lei nº 8.906/94)"""
-
+PREÇO E FORMA DE PAGAMENTO BASEADOS NA OAB SP E CLÁUSULA QUOTA-LITIS"""
     # 🗂️ SEÇÃO VISUAL DOS MODELOS NA BARRA LATERAL
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 📋 Modelos Rápidos de Peças")
@@ -469,7 +396,8 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
         st.markdown("**• Apelação / Contrarrazões:** 15 dias úteis")
         st.markdown("**• Agravo de Instrumento:** 15 dias úteis")
         st.markdown("**• Embargos de Declaração:** 5 dias úteis")
-        st.ma    # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
+        st.markdown("**• Manifestação Documental:** 15 dias úteis")
+    # CARREGAMENTO DA CHAVE e ENGENHARIA DE CHAT MULTIMODAL
     groq_api_key = st.secrets.get("GROQ_API_KEY")
     if not groq_api_key:
         st.error("👉 Configuração GROQ_API_KEY ausente nos Secrets do Streamlit Cloud.")
@@ -525,8 +453,7 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
                     with col_dl2:
                         arquivo_pdf = criar_arquivo_pdf(message["content"])
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"{nome_doc}_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
-kdown("**• Manifestação Documental:** 15 dias úteis")
-               # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
+        # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
         st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
         
         termo_lgpd = st.checkbox(
@@ -566,7 +493,6 @@ kdown("**• Manifestação Documental:** 15 dias úteis")
         if prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
             st.rerun()
-
         # BLOCO DE PROCESSAMENTO E DISPARO DAS APIS (Com Atualização de Saldo no Banco)
         if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
             ultimo_comando = st.session_state.messages[-1]["content"]
