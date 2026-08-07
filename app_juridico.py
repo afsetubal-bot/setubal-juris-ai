@@ -43,7 +43,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Ocultar utilitários de desenvolvimento na direita mantendo o botão do celular na esquerda
+# Ocultar utilitários e injetar folha de estilo para centralizar e diminuir a tela de login no celular/PC
 st.markdown("""
     <style>
     .stAppDeployButton { display: none !important; }
@@ -51,6 +51,17 @@ st.markdown("""
     footer { visibility: hidden !important; }
     button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
         display: flex !important; visibility: visible !important; opacity: 1 !important;
+    }
+    /* Centralizador e limitador de largura para a caixa de autenticação */
+    div[data-testid="stVerticalBlock"] > div:has(div.stTabs) {
+        max-width: 450px !important;
+        margin: 0 auto !important;
+        padding-top: 20px;
+    }
+    div[data-testid="stMarkdownContainer"] > h1, div[data-testid="stMarkdownContainer"] > h3 {
+        text-align: center !important;
+        max-width: 550px !important;
+        margin: 0 auto !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -81,7 +92,6 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 if "dados_usuario" not in st.session_state:
     st.session_state["dados_usuario"] = {}
-
 def criar_arquivo_word(texto):
     doc = Document()
     texto_limpo = texto.replace("**", "").replace("###", "")
