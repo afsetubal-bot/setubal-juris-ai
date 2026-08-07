@@ -43,77 +43,76 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# BLINDAGEM VISUAL AVANÇADA: Reduz fontes, remove espaçamentos excessivos e fixa largura slim
-st.markdown("""
-    <style>
-    .stAppDeployButton { display: none !important; }
-    div[data-testid="stHeaderActionElements"], button[data-testid="stHeaderActionButton"], #MainMenu { display: none !important; visibility: hidden !important; }
-    footer { visibility: hidden !important; }
-    button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
-        display: flex !important; visibility: visible !important; opacity: 1 !important;
-    }
-    
-    /* Força toda a interface de entrada a encolher e se alinhar verticalmente no meio */
-    div.block-container {
-        max-width: 450px !important;
-        margin: 0 auto !important;
-        padding-top: 30px !important;
-    }
-    
-    /* Configuração e redução cirúrgica das fontes dos títulos */
-    .titulo-central {
-        text-align: center !important;
-        margin: 0 auto !important;
-        padding-bottom: 5px !important;
-    }
-    .titulo-central h1 {
-        font-size: 24px !important; /* Diminuição drástica do título principal */
-        font-weight: bold !important;
-        line-height: 30px !important;
-        margin-bottom: 5px !important;
-    }
-    .titulo-central h3 {
-        font-size: 14px !important; /* Redução do subtítulo institucional */
-        font-weight: normal !important;
-        color: #555555 !important;
-        margin-top: 0px !important;
-        margin-bottom: 15px !important;
-    }
-    
-    /* Garante consistência simétrica de 350px para abas e inputs */
-    div[data-testid="stVerticalBlock"] {
-        max-width: 350px !important;
-        margin: 0 auto !important;
-    }
-    div[data-testid="stTextInput"] {
-        max-width: 350px !important;
-        margin: 0 auto !important;
-    }
-    div[data-testid="stWidgetLabel"] {
-        text-align: left !important;
-    }
-    
-    /* Formatação elegante e 100% alinhada para o botão principal */
-    div.stButton {
-        text-align: center !important;
-        margin-top: 15px !important;
-    }
-    div.stButton > button {
-        width: 100% !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# CONEXÃO SEGURA COM O BANCO DE DADOS (SUPABASE) VIA SECRETS
-supabase_url = st.secrets.get("SUPABASE_URL")
-supabase_key = st.secrets.get("SUPABASE_KEY")
-
-supabase: Client = None
-if supabase_url and supabase_key:
-    try:
-        supabase = create_client(supabase_url, supabase_key)
-    except Exception:
-        st.error("Erro interno ao conectar com o servidor de autenticação.")
+# CONDICIONAL DE CSS: Se o usuário NÃO estiver logado, aplica o design slim de 350px. Se logar, a tela se expande ao tamanho largo original!
+if "usuario_logado" not in st.session_state or st.session_state["usuario_logado"] is None:
+    st.markdown("""
+        <style>
+        .stAppDeployButton { display: none !important; }
+        div[data-testid="stHeaderActionElements"], button[data-testid="stHeaderActionButton"], #MainMenu { display: none !important; visibility: hidden !important; }
+        footer { visibility: hidden !important; }
+        button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
+            display: flex !important; visibility: visible !important; opacity: 1 !important;
+        }
+        div.block-container {
+            max-width: 450px !important;
+            margin: 0 auto !important;
+            padding-top: 30px !important;
+        }
+        .titulo-central {
+            text-align: center !important;
+            margin: 0 auto !important;
+            padding-bottom: 5px !important;
+        }
+        .titulo-central h1 {
+            font-size: 24px !important;
+            font-weight: bold !important;
+            line-height: 30px !important;
+            margin-bottom: 5px !important;
+        }
+        .titulo-central h3 {
+            font-size: 14px !important;
+            font-weight: normal !important;
+            color: #555555 !important;
+            margin-top: 0px !important;
+            margin-bottom: 15px !important;
+        }
+        div[data-testid="stVerticalBlock"] {
+            max-width: 350px !important;
+            margin: 0 auto !important;
+        }
+        div[data-testid="stTextInput"] {
+            max-width: 350px !important;
+            margin: 0 auto !important;
+        }
+        div[data-testid="stWidgetLabel"] {
+            text-align: left !important;
+        }
+        div.stButton {
+            text-align: center !important;
+            margin-top: 15px !important;
+        }
+        div.stButton > button {
+            width: 100% !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+else:
+    # CSS para o ambiente interno de trabalho: restaura as proporções largas e remove blocos comprimidos
+    st.markdown("""
+        <style>
+        .stAppDeployButton { display: none !important; }
+        div[data-testid="stHeaderActionElements"], button[data-testid="stHeaderActionButton"], #MainMenu { display: none !important; visibility: hidden !important; }
+        footer { visibility: hidden !important; }
+        button[data-testid="stSidebarCollapseButton"], button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"] {
+            display: flex !important; visibility: visible !important; opacity: 1 !important;
+        }
+        div.block-container {
+            max-width: 100% !important; /* Devolve a largura total da tela para o chat */
+            padding-left: 50px !important;
+            padding-right: 50px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
 # INICIALIZAÇÃO DE VARIÁVEIS DE MEMÓRIA ESTÁVEL DE SESSÃO
 if "messages" not in st.session_state:
@@ -130,6 +129,7 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 if "dados_usuario" not in st.session_state:
     st.session_state["dados_usuario"] = {}
+
 def criar_arquivo_word(texto):
     doc = Document()
     texto_limpo = texto.replace("**", "").replace("###", "")
@@ -172,9 +172,8 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 RENDERIZAÇÃO DA INTERFACE DE ENTRADA COM FONTES LEVES
+# 🔒 INTERFACE DE LOGIN E CADASTRO DINÂMICA
 if st.session_state["usuario_logado"] is None:
-    # Div de títulos com formatação reduzida nas tags h1 e h3
     st.markdown('<div class="titulo-central"><h1>🏛️ Portal de Acesso - Setubal Juris AI</h1><h3>Acesso Restrito a Advogados e Associados</h3></div>', unsafe_allow_html=True)
     
     aba_login, aba_cadastro = st.tabs(["🔑 Realizar Login", "📝 Criar Nova Conta"])
@@ -203,7 +202,7 @@ if st.session_state["usuario_logado"] is None:
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
                     if hasattr(resposta, "data") and resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
-                        st.session_state["dados_usuario"] = resposta.data
+                        st.session_state["dados_usuario"] = resposta.data[0] if isinstance(resposta.data, list) else resposta.data
                         st.success("Autenticação concluída! Entrando...")
                         st.rerun()
                     else:
@@ -222,7 +221,7 @@ if st.session_state["usuario_logado"] is None:
             if supabase and email_cad and senha_cad:
                 try:
                     checagem = supabase.table("assinaturas_usuarios").select("email").eq("email", email_cad.strip()).execute()
-                    if checagem.data and len(checagem.data) > 0:
+                    if hasattr(checagem, "data") and checagem.data and len(checagem.data) > 0:
                         st.error("⚠️ Este e-mail já está cadastrado. Vá até a aba 'Realizar Login'.")
                     else:
                         novo_user = {
@@ -240,7 +239,6 @@ if st.session_state["usuario_logado"] is None:
                 st.warning("Preencha todos os campos.")
                 
     st.stop()
-
 
 # --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
 user_email = st.session_state["usuario_logado"]
