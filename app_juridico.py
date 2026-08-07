@@ -115,7 +115,7 @@ def criar_arquivo_pdf(texto):
     linhas = texto.split("\n")
     for linha in linhas:
         linha_limpa = linha.replace("**", "").replace("###", "").strip()
-        if not filename_extensao if 'name_extensao' in locals() else True: continue # Tratamento genérico
+        if not linha_limpa: continue
         if linha_limpa.startswith(("DO ", "DOS ", "DA ", "DAS ", "EDENTAL ", "NOTIFICAÇÃO ", "PETIÇÃO ", "CONTRATO ", "DECLARAÇÃO ", "FICHA ")):
             elementos.append(Paragraph(linha_limpa, estilo_titulo))
         elif linha_limpa.startswith(">") or (linha_limpa.startswith('"') and len(linha_limpa) > 60):
@@ -134,10 +134,12 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO BLINDADA CONTRA VAZAMENTOS
+# 🔒 INTERFACE DE LOGIN CENTRALIZADA E REDENOMINADA
 if st.session_state["usuario_logado"] is None:
+    st.markdown("<br><br>", unsafe_allow_html=True)
     st.title("🏛️ Portal de Acesso - Setubal Juris AI")
-    st.subheader("Controle de Autenticação Corporativa e Assinaturas")
+    # Novo subtítulo corporativo centralizado
+    st.subheader("Acesso Restrito a Advogados e Associados")
     
     aba_login, aba_cadastro = st.tabs(["🔑 Realizar Login", "📝 Criar Nova Conta"])
     
@@ -145,11 +147,9 @@ if st.session_state["usuario_logado"] is None:
         email_login = st.text_input("E-mail Cadastrado:", key="email_l")
         senha_login = st.text_input("Senha de Acesso:", type="password", key="senha_l")
         if st.button("Entrar no Sistema", type="primary"):
-            # Coleta os dados escondidos do Secrets para fazer a validação master em background
             secret_admin_email = st.secrets.get("ADMIN_EMAIL")
             secret_admin_senha = st.secrets.get("ADMIN_SENHA")
             
-            # CHAVE BLINDADA: Valida o administrador sem expor as strings no código
             if secret_admin_email and secret_admin_senha and email_login.strip() == secret_admin_email and senha_login == secret_admin_senha:
                 st.session_state["usuario_logado"] = secret_admin_email
                 st.session_state["dados_usuario"] = {
@@ -166,8 +166,7 @@ if st.session_state["usuario_logado"] is None:
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
                     if hasattr(resposta, "data") and resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
-                        # Se o banco retornar formato de lista, extrai o primeiro dicionário com segurança
-                        st.session_state["dados_usuario"] = resposta.data if isinstance(resposta.data, dict) else resposta.data
+                        st.session_state["dados_usuario"] = resposta.data[0] if isinstance(resposta.data, list) else resposta.data
                         st.success("Autenticação bem-sucedida! Entrando...")
                         st.rerun()
                     else:
@@ -178,7 +177,8 @@ if st.session_state["usuario_logado"] is None:
                 st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
                 
     with aba_cadastro:
-        st.markdown("Crie sua conta para ganhar **01 consulta jurídica gratuita de degustação**.")
+        # Novo termo comercial: Teste Gratuito
+        st.markdown("Crie sua conta para ganhar **01 consulta jurídica de teste gratuito**.")
         email_cad = st.text_input("Seu melhor E-mail:", key="email_c")
         senha_cad = st.text_input("Crie uma Senha:", type="password", key="senha_c")
         if st.button("Cadastrar e Ganhar Teste Grátis"):
@@ -198,6 +198,7 @@ if st.session_state["usuario_logado"] is None:
             else:
                 st.warning("Preencha todos os campos para cadastrar.")
     st.stop()
+
 # --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
 user_email = st.session_state["usuario_logado"]
 user_info = st.session_state["dados_usuario"]
