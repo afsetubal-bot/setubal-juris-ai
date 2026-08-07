@@ -8,3 +8,8 @@ langchain-community
 sentence-transformers
 pysqlite3-binary
 reportlab
+langchain-groq
+pypdf
+docx
+reportlab
+supabase
