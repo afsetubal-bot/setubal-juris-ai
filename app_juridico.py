@@ -526,7 +526,7 @@ Cláusula 4ª. Em remuneração pelos serviços advocatícios prestados, fixam-s
                         arquivo_pdf = criar_arquivo_pdf(message["content"])
                         st.download_button(label="📄 Baixar em PDF (.pdf)", data=arquivo_pdf, file_name=f"{nome_doc}_{i}.pdf", mime="application/pdf", key=f"btn_p_{i}")
 kdown("**• Manifestação Documental:** 15 dias úteis")
-        # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
+               # --- TRAVA DA LGPD CONSOLIDADA NO CENTRO DA TELA PRINCIPAL ---
         st.markdown("### 🔐 Controle de Segurança da Informação (LGPD)")
         
         termo_lgpd = st.checkbox(
@@ -566,6 +566,7 @@ kdown("**• Manifestação Documental:** 15 dias úteis")
         if prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
             st.rerun()
+
         # BLOCO DE PROCESSAMENTO E DISPARO DAS APIS (Com Atualização de Saldo no Banco)
         if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
             ultimo_comando = st.session_state.messages[-1]["content"]
