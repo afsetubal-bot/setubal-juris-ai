@@ -43,7 +43,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# BLINDAGEM VISUAL EXTREMA: Força encolhimento de TODOS os inputs da tela de acesso para 380px
+# BLINDAGEM VISUAL ABSOLUTA: Trava toda a interface de entrada em um bloco Slim de 350px centralizado no meio do site
 st.markdown("""
     <style>
     .stAppDeployButton { display: none !important; }
@@ -53,28 +53,32 @@ st.markdown("""
         display: flex !important; visibility: visible !important; opacity: 1 !important;
     }
     
-    /* Centralização forçada dos títulos superiores */
-    .titulo-central {
+    /* Configuração Geral da Página de Entrada */
+    div.block-container {
+        max-width: 450px !important;
+        margin: 0 auto !important;
+        padding-top: 50px !important;
+    }
+    
+    /* Força os Títulos, Abas, Textos e Botões a encolherem para 350px e centralizarem na marra */
+    div[data-testid="stVerticalBlock"] {
+        max-width: 350px !important;
+        margin: 0 auto !important;
         text-align: center !important;
-        margin: 0 auto !important;
-        padding-top: 40px;
     }
     
-    /* Força os elementos internos das abas a ficarem em formato Slim Compacto (380px) centralizado */
-    div[data-testid="stVerticalBlock"] > div:has(div.stTabs) {
-        max-width: 380px !important;
-        margin: 0 auto !important;
-    }
-    
-    /* Encolhe cirurgicamente os campos de texto e caixas de digitação */
-    div[data-testid="stTextInput"] {
-        max-width: 380px !important;
-        margin: 0 auto !important;
-    }
-    
-    /* Alinha os rótulos de digitação para a esquerda */
+    /* Alinha os rótulos de e-mail e senha para o canto esquerdo da caixinha compacta */
     div[data-testid="stWidgetLabel"] {
         text-align: left !important;
+    }
+    
+    /* Força o botão a alinhar centralizado horizontalmente e ficar colado abaixo dos inputs */
+    div.stButton {
+        text-align: center !important;
+        margin-top: 15px !important;
+    }
+    div.stButton > button {
+        width: 100% !important; /* Faz o botão ocupar toda a largura da caixinha slim de forma elegante */
     }
     </style>
     """, unsafe_allow_html=True)
@@ -148,9 +152,10 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE DE LOGIN CENTRALIZADA E REDENOMINADA SLIM
+# 🔒 INTERFACE DE LOGIN E CADASTRO NO PADRÃO ESTÉTICO COMPACTO
 if st.session_state["usuario_logado"] is None:
-    st.markdown('<div class="titulo-central"><h1>🏛️ Portal de Acesso - Setubal Juris AI</h1><h3>Acesso Restrito a Advogados e Associados</h3></div>', unsafe_allow_html=True)
+    st.title("🏛️ Portal de Acesso - Setubal Juris AI")
+    st.write("Acesso Restrito a Advogados e Associados")
     st.markdown("<br>", unsafe_allow_html=True)
     
     aba_login, aba_cadastro = st.tabs(["🔑 Realizar Login", "📝 Criar Nova Conta"])
@@ -158,7 +163,9 @@ if st.session_state["usuario_logado"] is None:
     with aba_login:
         email_login = st.text_input("E-mail Cadastrado:", key="email_l")
         senha_login = st.text_input("Senha de Acesso:", type="password", key="senha_l")
-        if st.button("Entrar no Sistema", type="primary"):
+        
+        # O botão vermelho agora aparece posicionado exatamente embaixo dos inputs cíveis
+        if st.button("Entrar no Sistema", type="primary", key="btn_login_exec"):
             secret_admin_email = st.secrets.get("ADMIN_EMAIL")
             secret_admin_senha = st.secrets.get("ADMIN_SENHA")
             
@@ -192,10 +199,10 @@ if st.session_state["usuario_logado"] is None:
         st.markdown("Ganhe **01 consulta de teste gratuito** ao criar sua conta.")
         email_cad = st.text_input("Seu melhor E-mail:", key="email_c")
         senha_cad = st.text_input("Crie uma Senha:", type="password", key="senha_c")
-        if st.button("Cadastrar e Ativar Conta"):
+        
+        if st.button("Cadastrar e Ativar Conta", key="btn_cad_exec"):
             if supabase and email_cad and senha_cad:
                 try:
-                    # Checa de forma amigável e preventiva se o e-mail já existe na base antes de tentar o insert
                     checagem = supabase.table("assinaturas_usuarios").select("email").eq("email", email_cad.strip()).execute()
                     if checagem.data and len(checagem.data) > 0:
                         st.error("⚠️ Este e-mail já está cadastrado. Vá até a aba 'Realizar Login'.")
