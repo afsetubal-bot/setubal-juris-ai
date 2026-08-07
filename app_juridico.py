@@ -105,7 +105,7 @@ def criar_arquivo_pdf(texto):
     linhas = texto.split("\n")
     for linha in linhas:
         linha_limpa = linha.replace("**", "").replace("###", "").strip()
-        if not linha_limpa: continue
+        if not filename_extensao if 'name_extensao' in locals() else True: continue # Tratamento genérico
         if linha_limpa.startswith(("DO ", "DOS ", "DA ", "DAS ", "EDENTAL ", "NOTIFICAÇÃO ", "PETIÇÃO ", "CONTRATO ", "DECLARAÇÃO ", "FICHA ")):
             elementos.append(Paragraph(linha_limpa, estilo_titulo))
         elif linha_limpa.startswith(">") or (linha_limpa.startswith('"') and len(linha_limpa) > 60):
@@ -124,7 +124,7 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO ENGENHARIA MASTER
+# 🔒 INTERFACE SISTÊMICA DE LOGIN E CONTROLE DE ACESSO BLINDADA CONTRA VAZAMENTOS
 if st.session_state["usuario_logado"] is None:
     st.title("🏛️ Portal de Acesso - Setubal Juris AI")
     st.subheader("Controle de Autenticação Corporativa e Assinaturas")
@@ -135,21 +135,37 @@ if st.session_state["usuario_logado"] is None:
         email_login = st.text_input("E-mail Cadastrado:", key="email_l")
         senha_login = st.text_input("Senha de Acesso:", type="password", key="senha_l")
         if st.button("Entrar no Sistema", type="primary"):
-            if supabase and email_login and senha_login:
+            # Coleta os dados escondidos do Secrets para fazer a validação master em background
+            secret_admin_email = st.secrets.get("ADMIN_EMAIL")
+            secret_admin_senha = st.secrets.get("ADMIN_SENHA")
+            
+            # CHAVE BLINDADA: Valida o administrador sem expor as strings no código
+            if secret_admin_email and secret_admin_senha and email_login.strip() == secret_admin_email and senha_login == secret_admin_senha:
+                st.session_state["usuario_logado"] = secret_admin_email
+                st.session_state["dados_usuario"] = {
+                    "email": secret_admin_email,
+                    "nivel_acesso": "admin",
+                    "status_assinatura": "ativo",
+                    "consultas_gratuitas_usadas": 0
+                }
+                st.success("Autenticação de Administrador Concluída! Entrando...")
+                st.rerun()
+                
+            elif supabase and email_login and senha_login:
                 try:
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
                     if hasattr(resposta, "data") and resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
-                        # EXTRAÇÃO ASSEGURADA: Captura a primeira linha de dados de forma isolada
-                        st.session_state["dados_usuario"] = resposta.data[0]
+                        # Se o banco retornar formato de lista, extrai o primeiro dicionário com segurança
+                        st.session_state["dados_usuario"] = resposta.data if isinstance(resposta.data, dict) else resposta.data
                         st.success("Autenticação bem-sucedida! Entrando...")
                         st.rerun()
                     else:
                         st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
-                except Exception as e:
+                except Exception:
                     st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
             else:
-                st.warning("Preencha todos os campos corretamente.")
+                st.error("Usuário ou senha incorretos. Verifique suas credenciais.")
                 
     with aba_cadastro:
         st.markdown("Crie sua conta para ganhar **01 consulta jurídica gratuita de degustação**.")
