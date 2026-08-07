@@ -97,7 +97,6 @@ if "usuario_logado" not in st.session_state or st.session_state["usuario_logado"
         </style>
         """, unsafe_allow_html=True)
 else:
-    # CSS para o ambiente interno de trabalho: restaura as proporções largas e remove blocos comprimidos
     st.markdown("""
         <style>
         .stAppDeployButton { display: none !important; }
@@ -107,7 +106,7 @@ else:
             display: flex !important; visibility: visible !important; opacity: 1 !important;
         }
         div.block-container {
-            max-width: 100% !important; /* Devolve a largura total da tela para o chat */
+            max-width: 100% !important;
             padding-left: 50px !important;
             padding-right: 50px !important;
         }
@@ -172,7 +171,7 @@ def exportar_historico_completo(mensagens):
         historico_texto += f"[{role_label}]:\n{msg['content']}\n\n" + "-"*50 + "\n\n"
     return historico_texto
 
-# 🔒 INTERFACE DE LOGIN E CADASTRO DINÂMICA
+# 🔒 INTERFACE DE LOGIN E CADASTRO DINÂMICA (CORRIGIDA)
 if st.session_state["usuario_logado"] is None:
     st.markdown('<div class="titulo-central"><h1>🏛️ Portal de Acesso - Setubal Juris AI</h1><h3>Acesso Restrito a Advogados e Associados</h3></div>', unsafe_allow_html=True)
     
@@ -202,7 +201,7 @@ if st.session_state["usuario_logado"] is None:
                     resposta = supabase.table("assinaturas_usuarios").select("*").eq("email", email_login.strip()).eq("senha", senha_login).execute()
                     if hasattr(resposta, "data") and resposta.data and len(resposta.data) > 0:
                         st.session_state["usuario_logado"] = email_login.strip()
-                        st.session_state["dados_usuario"] = resposta.data[0] if isinstance(resposta.data, list) else resposta.data
+                        st.session_state["dados_usuario"] = resposta.data if isinstance(resposta.data, list) else resposta.data
                         st.success("Autenticação concluída! Entrando...")
                         st.rerun()
                     else:
@@ -239,35 +238,6 @@ if st.session_state["usuario_logado"] is None:
                 st.warning("Preencha todos os campos.")
                 
     st.stop()
-
-# --- FLUXO PÓS-LOGIN: VALIDAÇÃO DE ASSINATURA, ALERTAS E REGRAS COMERCIAIS ---
-user_email = st.session_state["usuario_logado"]
-user_info = st.session_state["dados_usuario"]
-
-# Garante a extração limpa das variáveis mesmo se o banco retornar em formato de lista
-if isinstance(user_info, list) and len(user_info) > 0:
-    dados_reais = user_info[0]
-else:
-    dados_reais = user_info
-
-nivel = dados_reais.get("nivel_acesso", "usuario")
-consultas_usadas = int(dados_reais.get("consultas_gratuitas_usadas", 0))
-status_ass = dados_reais.get("status_assinatura", "gratis")
-data_venc = dados_reais.get("data_vencimento", None)
-
-bloqueado = False
-
-# Se o usuário NÃO for administrador, passa pela régua de checagem do plano
-if nivel != "admin":
-    # Regra 1: Degustação da primeira consulta gratuita acabada
-    if status_ass == "gratis" and consultas_usadas >= 1:
-        st.error("🔒 Degustação Concluída! Você já utilizou sua 01 consulta gratuita.")
-        st.info("Para continuar utilizando o Setubal Juris AI por 30 dias ilimitados, realize o pagamento da assinatura mensal de R$ 50,00.")
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💳 Ir para Pagamento (Liberar PIX)", type="primary"):
-            st.toast("Redirecionando para o Gateway de Pagamento...")
-        bloqueado = True
-        st.stop()
         
     # Regra 2: Assinatura Mensal expirada
     elif status_ass == "vencido" or (data_venc and datetime.datetime.strptime(str(data_venc), "%Y-%m-%d").date() < datetime.date.today()):
